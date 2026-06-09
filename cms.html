@@ -15,18 +15,20 @@
         'bg-indigo-50', 'text-indigo-700', 'bg-cyan-50', 'text-cyan-700',
         'bg-emerald-50', 'text-emerald-700', 'text-rose-500', 'text-indigo-500', 
         'text-emerald-500', 'text-amber-500', 'text-cyan-500', 'text-purple-500', 
-        'text-pink-500', 'text-slate-500', 'text-blue-500'
+        'text-pink-500', 'text-slate-500', 'text-blue-500', 'text-fuchsia-500', 'text-sky-500', 'text-violet-500'
       ]
     }
   </script>
   
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- เพิ่ม Apache ECharts สำหรับกราฟขั้นสูง -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <script>
-    // ⚠️ นำ URL ของ Web App ที่ Deploy ใหม่มาใส่ตรงนี้เช่นกัน ⚠️
+    // ⚠️ นำ URL ของ Web App ที่ Deploy ใหม่มาใส่ตรงนี้ ⚠️
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxPSNCB1UBLRiTDtktn_lG8vr4zESTvUjrb44J6yhu5qMQ3jw4J-7E7UCctRcQdHPKcnQ/exec"; 
   </script>
 
@@ -68,6 +70,9 @@
     .preview-tablet { width: 100%; max-width: 820px; background-color: #ffffff; border-radius: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); margin-top: 2rem; margin-bottom: 2rem; border: 8px solid #cbd5e1; }
     .preview-mobile { width: 100%; max-width: 414px; background-color: #ffffff; border-radius: 3rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); margin-top: 2rem; margin-bottom: 2rem; border: 12px solid #1e293b; }
 
+    /* ECharts Responsive Fix */
+    .echart-container { width: 100%; min-height: 350px; }
+
     @media print {
       .no-print { display: none !important; }
       body { background-color: white !important; overflow: visible !important; }
@@ -78,6 +83,8 @@
       .live-widget-box:hover { outline: none !important; }
       .overflow-y-auto, .overflow-x-auto { overflow: visible !important; max-height: none !important; height: auto !important; }
       .glass-card, tr, .col-span-12, .md\:col-span-6, .md\:col-span-4, .md\:col-span-3, .lg\:col-span-6, .lg\:col-span-4, .lg\:col-span-3 { break-inside: avoid; page-break-inside: avoid; }
+      /* Ensure charts don't break across pages */
+      .echart-container { break-inside: avoid; page-break-inside: avoid; }
     }
   </style>
 </head>
@@ -282,7 +289,7 @@
   </div>
 
   <script>
-    // ไอคอน SVG ต่างๆ (คงเดิม)
+    // ไอคอน SVG ต่างๆ
     const svgs = {
         layerPlus: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>`,
         user: `<svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>`,
@@ -318,21 +325,30 @@
         rank3: `<svg class="w-5 h-5 text-amber-700 inline-block" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4L22 9.6l-5.6 5.2 1.6 7.6L12 19.2 6.4 22.4l1.6-7.6L2.4 9.6l7.6-.2L12 2z"/></svg>`,
         deviceDesktop: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 21v1h6v-1l-.75-4M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>`,
         deviceTablet: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></rect><path d="M12 18h.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`,
-        deviceMobile: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></rect><path d="M12 18h.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`
+        deviceMobile: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></rect><path d="M12 18h.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`,
+        chartPie: `<svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>`,
+        chartBarH: `<svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h7"></path></svg>`,
+        chartBarV: `<svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3zm12-3c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3zM3 21v-8m4 8v-4m4 4v-6m4 6v-8m4 8v-5"></path></svg>`
     };
 
     const widgetTypes = [
         { val: 'ignore', text: 'ไม่นำมาแสดงผล', icon: svgs.crossCircle, color: 'text-rose-500' },
         { val: 'table_column', text: 'แสดงในตารางรวม (Data Table)', icon: svgs.table, color: 'text-blue-500' },
+        { val: 'chart_pie', text: 'กราฟวงกลม (มีเส้นชี้ตัวเลข)', icon: svgs.chartPie, color: 'text-fuchsia-500' },
+        { val: 'chart_bar_h', text: 'กราฟแท่งแนวนอน (H-Bar)', icon: svgs.chartBarH, color: 'text-sky-500' },
+        { val: 'chart_bar_v', text: 'กราฟแท่งแนวตั้ง (V-Bar)', icon: svgs.chartBarV, color: 'text-violet-500' },
         { val: 'kpi_total', text: 'นับจำนวนรวม (KPI ปกติ)', icon: svgs.users, color: 'text-indigo-500' },
         { val: 'kpi_percent', text: 'KPI นับรวม + เทียบ %', icon: svgs.pie, color: 'text-emerald-500' },
         { val: 'kpi_compare', text: 'เปรียบเทียบข้อมูล 2 ชีท', icon: svgs.refresh, color: 'text-amber-500' },
         { val: 'average', text: 'หาค่าเฉลี่ยคะแนน (1-5)', icon: svgs.star, color: 'text-amber-500' },
-        { val: 'single_choice', text: 'แจกแจงความถี่ (ร้อยละ)', icon: svgs.pieAlt, color: 'text-cyan-500' },
+        { val: 'single_choice', text: 'แจกแจงความถี่ (แบบตาราง)', icon: svgs.pieAlt, color: 'text-cyan-500' },
         { val: 'multi_choice', text: 'แจกแจงเลือกหลายข้อ', icon: svgs.listCheck, color: 'text-purple-500' },
         { val: 'ranking', text: 'จัดอันดับ (Top 10)', icon: svgs.histogram, color: 'text-pink-500' },
         { val: 'text_list', text: 'รายการข้อเสนอแนะ', icon: svgs.comment, color: 'text-slate-500' }
     ];
+
+    // ชุดสีพาสเทลสวยงามสำหรับกราฟ
+    const chartColorPalette = ['#7ce0e6', '#5ab4d1', '#4182a4', '#41598f', '#855196', '#be4880', '#ed5d72', '#ff8469', '#ffad5c', '#fada5e', '#a8e64c'];
 
     document.getElementById('hdrLogoIcon').innerHTML = svgs.layerPlus;
     document.getElementById('hdrUserSvg').innerHTML = svgs.user;
@@ -378,7 +394,6 @@
     const currentUserEmail = localStorage.getItem('user_email');
     const currentUserName = localStorage.getItem('user_name') || currentUserEmail;
 
-    // 🟢 เปลี่ยนมาใช้ Fetch แทน google.script.run
     async function apiCall(payload) {
       try {
         const response = await fetch(SCRIPT_URL, {
@@ -393,7 +408,6 @@
     }
 
     window.onload = () => {
-        // ใช้ URLSearchParams แทน google.script.url.getLocation
         const urlParams = new URLSearchParams(window.location.search);
         const shareId = urlParams.get('id');
 
@@ -404,7 +418,6 @@
             loadSharedDashboardView(shareId);
         } else {
             if(!currentUserEmail) {
-                // หากไม่มี Auth ให้กลับไปหน้าเข้าสู่ระบบ
                 window.location.href = "index.html";
                 return;
             }
@@ -540,10 +553,9 @@
 
     function logout() {
         localStorage.removeItem('user_email'); localStorage.removeItem('user_name');
-        window.location.href = "index.html"; // ไปที่หน้า Login
+        window.location.href = "index.html";
     }
 
-    // 🟢 อัปเดต Fetch API
     async function fetchMyProjects() {
         showLoading('กำลังเรียกดูข้อมูลสถิติคลังองค์กร...');
         try {
@@ -557,7 +569,6 @@
         const container = document.getElementById('projectList');
         if(items.length === 0) return container.innerHTML = `<div class="col-span-3 text-center p-12 bg-white rounded-3xl border border-slate-200 font-bold text-slate-400">คุณยังไม่มีแผงสถิติรายงานผลใดๆ ในระบบ</div>`;
         
-        // 🟢 เปลี่ยนลิงก์แชร์เป็นระบบ GitHub Pages
         const baseUrl = window.location.href.split('?')[0]; 
         
         container.innerHTML = items.map(p => `
@@ -803,7 +814,7 @@
             
             let extraOptionsHtml = '';
             
-            if (['kpi_percent', 'kpi_compare', 'single_choice', 'multi_choice', 'ranking'].includes(map.type)) {
+            if (['kpi_percent', 'kpi_compare', 'single_choice', 'multi_choice', 'ranking', 'chart_pie', 'chart_bar_h', 'chart_bar_v'].includes(map.type)) {
                 let s1Name = document.getElementById('sheet1Input').value || 'Sheet 1';
                 let s2Name = document.getElementById('sheet2Input').value || 'Sheet 2';
                 extraOptionsHtml += `
@@ -864,6 +875,7 @@
         let newL = 12;
         if(val === 'kpi_total' || val === 'kpi_percent') newL = 3;
         else if(val === 'average' || val === 'kpi_compare') newL = 6;
+        else if(val === 'chart_pie') newL = 6;
         else newL = 12;
 
         if (typeof match.layout === 'number') match.layout = {d: match.layout, t: match.layout, m: match.layout};
@@ -1036,9 +1048,114 @@
         });
     };
 
+    // --- ฟังก์ชันสำหรับการเรนเดอร์กราฟ ECharts ---
+    function initEChartsWidgets(chartQueue) {
+        chartQueue.forEach(item => {
+            let dom = document.getElementById(item.id);
+            if (!dom) return;
+            
+            // เคลียร์กราฟเก่าถ้ามี เพื่อป้องกันการซ้อนทับกันตอนอัปเดตหน้าจอ
+            let existingChart = echarts.getInstanceByDom(dom);
+            if (existingChart) { existingChart.dispose(); }
+
+            let myChart = echarts.init(dom);
+            let option = {};
+
+            if (item.type === 'chart_pie') {
+                let pieData = item.data.map(d => ({ name: d[0], value: d[1] }));
+                option = {
+                    color: chartColorPalette,
+                    tooltip: { trigger: 'item', textStyle: { fontFamily: 'Google Sans, Noto Sans Thai' } },
+                    legend: { top: '0%', left: 'center', icon: 'circle', textStyle: { color: item.cText, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' } },
+                    series: [{
+                        type: 'pie',
+                        radius: ['45%', '75%'], // Donut style
+                        center: ['50%', '55%'],
+                        avoidLabelOverlap: true,
+                        itemStyle: { borderRadius: 5, borderColor: item.cBg, borderWidth: 2 },
+                        label: {
+                            show: true,
+                            formatter: function (params) {
+                                let pct = item.total > 0 ? ((params.value / item.total) * 100).toFixed(1) : 0;
+                                return `{name|${params.name}}\n{val|${params.value} คน}\n{pct|${pct}%}`;
+                            },
+                            rich: {
+                                name: { fontSize: 12, color: item.cText, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai' },
+                                val: { fontSize: 16, color: item.cText, fontWeight: '900', padding: [4, 0], fontFamily: 'Google Sans, Noto Sans Thai' },
+                                pct: { fontSize: 11, color: item.cSub, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' }
+                            }
+                        },
+                        labelLine: { show: true, length: 15, length2: 20, smooth: true, lineStyle: { width: 2 } },
+                        data: pieData
+                    }]
+                };
+            } 
+            else if (item.type === 'chart_bar_h') {
+                let categories = item.data.map(d => d[0]).reverse(); // เอาค่ามากลับด้านให้แท่งใหญ่สุดอยู่บน
+                let values = item.data.map(d => d[1]).reverse();
+                option = {
+                    color: [chartColorPalette[0]],
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, textStyle: { fontFamily: 'Google Sans, Noto Sans Thai' } },
+                    grid: { left: '3%', right: '4%', bottom: '3%', top: '5%', containLabel: true },
+                    xAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed', color: item.cSub + '33' } }, axisLabel: { color: item.cSub, fontFamily: 'Google Sans, Noto Sans Thai' } },
+                    yAxis: { type: 'category', data: categories, axisLabel: { color: item.cText, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai' }, axisLine: { show: false }, axisTick: { show: false } },
+                    series: [{
+                        type: 'bar',
+                        data: values,
+                        itemStyle: { borderRadius: [0, 4, 4, 0] },
+                        label: {
+                            show: true,
+                            position: 'right', // ป้องกันตัวอักษรโดนทับด้วยการวางไว้ด้านขวาของแท่งเสมอ
+                            formatter: function (params) {
+                                let pct = item.total > 0 ? ((params.value / item.total) * 100).toFixed(2) : 0;
+                                return `{val|${params.value} คน} {pct|คิดเป็น ${pct}%}`;
+                            },
+                            rich: {
+                                val: { color: item.cText, fontSize: 13, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai' },
+                                pct: { color: item.cSub, fontSize: 12, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai' }
+                            }
+                        }
+                    }]
+                };
+            }
+            else if (item.type === 'chart_bar_v') {
+                let categories = item.data.map(d => d[0]);
+                let values = item.data.map(d => ({ value: d[1], itemStyle: { color: chartColorPalette[categories.indexOf(d[0]) % chartColorPalette.length] } }));
+                option = {
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, textStyle: { fontFamily: 'Google Sans, Noto Sans Thai' } },
+                    legend: { data: categories, top: '0%', icon: 'circle', textStyle: { color: item.cText, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' } },
+                    grid: { left: '3%', right: '4%', bottom: '5%', top: '20%', containLabel: true },
+                    xAxis: { type: 'category', data: categories, axisLabel: { color: item.cText, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai', interval: 0, rotate: categories.length > 5 ? 30 : 0 }, axisLine: { show: false }, axisTick: { show: false } },
+                    yAxis: { type: 'value', splitLine: { lineStyle: { color: item.cSub + '33' } }, axisLabel: { color: item.cSub, fontFamily: 'Google Sans, Noto Sans Thai' } },
+                    series: [{
+                        type: 'bar',
+                        data: values,
+                        itemStyle: { borderRadius: [4, 4, 0, 0] },
+                        label: {
+                            show: true,
+                            position: 'top',
+                            formatter: function (params) {
+                                let pct = item.total > 0 ? ((params.value / item.total) * 100).toFixed(2) : 0;
+                                return `{val|${params.value} คน}\n{pct|คิดเป็น ${pct}%}`;
+                            },
+                            rich: {
+                                val: { color: item.cText, fontSize: 12, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai', padding: [0,0,2,0] },
+                                pct: { color: item.cSub, fontSize: 10, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai' }
+                            }
+                        }
+                    }]
+                };
+            }
+
+            myChart.setOption(option);
+            window.addEventListener('resize', () => myChart.resize());
+        });
+    }
+
     function renderLiveCanvasDashboardSpace() {
         const container = document.getElementById('liveCanvasGridContainer');
         container.innerHTML = "";
+        let chartDataQueue = []; // คิวสำหรับเก็บข้อมูลเพื่อนำไปวาดกราฟด้วย ECharts
 
         const filterConfig = liveWidgetMapping.find(m => m.isFilter === true);
         let d1 = [...rawData1], d2 = [...rawData2];
@@ -1105,9 +1222,7 @@
                 innerHtml = `<div class="glass-card p-5 h-full flex flex-col justify-between" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="text-xs font-black uppercase mb-3 whitespace-normal leading-snug" style="color: ${cSub};">${dispHeaderTitle}</div><div class="text-3xl font-black mb-1" style="color: ${cText};">${count.toLocaleString()} <span class="text-xs" style="color: ${cSub};">คน</span></div><div class="mt-2 w-fit px-2.5 py-1 rounded-lg text-xs font-black border" style="color: ${cAccent}; background-color: ${cAccent}33; border-color: ${cAccent}4D;">คิดเป็น ${pct}%</div>${baseLabelHtml}</div>${m.note ? `<div class="text-[10px] px-3 py-1.5 rounded-xl mt-3 font-medium" style="background-color: ${cText}1A; color: ${cSub};">${m.note}</div>` : ''}</div>`;
             }
             else if (m.type === 'kpi_compare') {
-                let primaryData = d1;
-                let secondaryData = d2;
-                
+                let primaryData = d1; let secondaryData = d2;
                 let count1 = 0; primaryData.forEach(r => { if(String(r[m.index] || "").trim() && String(r[m.index] || "").trim() !== "-") count1++; });
                 let count2 = 0; secondaryData.forEach(r => { if(String(r[m.index] || "").trim() && String(r[m.index] || "").trim() !== "-") count2++; });
                 
@@ -1153,6 +1268,31 @@
                 let avg = count ? (sum/count).toFixed(2) : "0.00"; let pct = (parseFloat(avg)/5)*100;
                 innerHtml = `<div class="glass-card p-5 flex flex-col justify-between h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="flex justify-between items-start mb-3 gap-2"><span class="text-xs font-black flex-1 leading-snug" style="color: ${cSub};">${dispHeaderTitle}</span><span class="text-lg font-black px-2.5 py-0.5 rounded-xl border shadow-sm" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${avg}</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: ${cText}1A;"><div class="h-full" style="width:${pct}%; background-color: ${cAccent};"></div></div></div>${noteHtml}</div>`;
             }
+            // 🟢 ส่วนของการสร้างกราฟ ECharts (วงกลม, แท่งแนวนอน, แท่งแนวตั้ง)
+            else if (m.type === 'chart_pie' || m.type === 'chart_bar_h' || m.type === 'chart_bar_v') {
+                let counts = {}; let validTotal = 0;
+                data.forEach(r => { let val = String(r[m.index] || "").trim(); if(val && val !== "-") { validTotal++; counts[val] = (counts[val]||0)+1; } });
+                
+                let denominator = totalBaseForPct > 0 ? totalBaseForPct : validTotal;
+                let limit = rankingLimits[m.index] || 'ALL';
+                let sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]); if(limit !== 'ALL') sorted = sorted.slice(0, parseInt(limit));
+
+                innerHtml = `
+                <div class="glass-card p-5 flex flex-col h-full w-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};">
+                    <div class="flex items-start justify-between mb-2 gap-2 z-10">
+                        <h3 class="font-black text-sm flex items-center gap-1.5" style="color: ${cText};">
+                            <span style="color: ${cAccent};" class="w-5 h-5 flex">${m.type === 'chart_pie' ? svgs.chartPie : (m.type === 'chart_bar_h' ? svgs.chartBarH : svgs.chartBarV)}</span> 
+                            <span class="leading-tight">${dispHeaderTitle}</span>
+                        </h3>
+                        ${(m.type === 'chart_bar_h' || m.type === 'chart_bar_v') ? `<select onchange="updateRankingLimit(${m.index}, this.value)" class="text-[10px] font-bold bg-white/50 rounded-lg px-2 py-1 outline-none" style="color: ${cSub}; border: 1px solid ${cSub}33;"><option value="ALL" ${limit==='ALL'?'selected':''}>ทั้งหมด</option><option value="10" ${limit==='10'?'selected':''}>Top 10</option></select>` : ''}
+                    </div>
+                    <div id="echart_${m.id}" class="echart-container flex-1 mt-2"></div>
+                    ${noteHtml}
+                </div>`;
+                
+                chartDataQueue.push({ id: `echart_${m.id}`, type: m.type, data: sorted, total: denominator, cBg, cText, cSub, cAccent });
+            }
+            // แบบตารางแจกแจงดั้งเดิม
             else if (m.type === 'single_choice' || m.type === 'multi_choice') {
                 let counts = {}; let validTotal = 0;
                 data.forEach(r => { let val = String(r[m.index] || "").trim(); if(val && val !== "-") { validTotal++; if (m.type === 'multi_choice') val.split(/,\s*/).forEach(x => { if(x) counts[x] = (counts[x]||0)+1; }); else counts[val] = (counts[val]||0)+1; } });
@@ -1291,6 +1431,9 @@
            }
        });
        attachLiveCanvasContextEventObservers();
+
+       // สั่งให้ ECharts วาดกราฟทั้งหมดในคิวหลังจากเพิ่ม Element ลง DOM เสร็จแล้ว
+       setTimeout(() => { initEChartsWidgets(chartDataQueue); }, 150);
     }
 
     function openSmartAddWidgetModal() {
@@ -1357,7 +1500,7 @@
                 let selectedType = document.getElementById('popType').value;
                 let newL = 12;
                 if(selectedType === 'kpi_total' || selectedType === 'kpi_percent') newL = 3;
-                else if(selectedType === 'average' || selectedType === 'kpi_compare') newL = 6;
+                else if(selectedType === 'average' || selectedType === 'kpi_compare' || selectedType === 'chart_pie') newL = 6;
 
                 liveWidgetMapping.push({
                     id: 'w_ad_' + Math.random().toString(36).substr(2, 4),
@@ -1592,6 +1735,8 @@
 
     function renderWidgetsViewOnlyContainer(maps) {
         const container = document.getElementById('vWidgetContainer'); container.innerHTML = "";
+        let chartDataQueue = [];
+
         const filterConfig = maps.find(m => m.isFilter === true);
         let d1 = [...rawData1], d2 = [...rawData2];
 
@@ -1699,6 +1844,28 @@
                 let avg = count ? (sum/count).toFixed(2) : "0.00"; let pct = (parseFloat(avg)/5)*100;
                 innerHtml = `<div class="glass-card p-6 flex flex-col justify-between h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="flex justify-between items-start mb-3 gap-2"><span class="text-xs font-black flex-1 whitespace-normal leading-snug" style="color: ${cSub};">${dispHeaderTitle}</span><span class="text-lg font-black px-2.5 py-0.5 rounded-xl border shadow-sm" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${avg}</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: ${cText}1A;"><div class="h-full" style="width:${pct}%; background-color: ${cAccent};"></div></div></div></div>`;
             }
+            // 🟢 ECharts สำหรับหน้า Share View Only
+            else if (m.type === 'chart_pie' || m.type === 'chart_bar_h' || m.type === 'chart_bar_v') {
+                let counts = {}; let validTotal = 0;
+                data.forEach(r => { let val = String(r[m.index] || "").trim(); if(val && val !== "-") { validTotal++; counts[val] = (counts[val]||0)+1; } });
+                
+                let denominator = totalBaseForPct > 0 ? totalBaseForPct : validTotal;
+                let limit = rankingLimits[m.index] || 'ALL';
+                let sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]); if(limit !== 'ALL') sorted = sorted.slice(0, parseInt(limit));
+
+                innerHtml = `
+                <div class="glass-card p-6 flex flex-col h-full w-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};">
+                    <div class="flex items-start justify-between mb-2 gap-2 z-10">
+                        <h3 class="font-black text-sm flex items-center gap-1.5" style="color: ${cText};">
+                            <span style="color: ${cAccent};" class="w-5 h-5 flex">${m.type === 'chart_pie' ? svgs.chartPie : (m.type === 'chart_bar_h' ? svgs.chartBarH : svgs.chartBarV)}</span> 
+                            <span class="leading-tight">${dispHeaderTitle}</span>
+                        </h3>
+                    </div>
+                    <div id="echart_${m.id}_view" class="echart-container flex-1 mt-2"></div>
+                </div>`;
+                
+                chartDataQueue.push({ id: `echart_${m.id}_view`, type: m.type, data: sorted, total: denominator, cBg, cText, cSub, cAccent });
+            }
             else if (m.type === 'single_choice' || m.type === 'multi_choice') {
                 let counts = {}; let validTotal = 0;
                 data.forEach(r => { let val = String(r[m.index] || "").trim(); if(val && val !== "-") { validTotal++; if (m.type === 'multi_choice') val.split(/,\s*/).forEach(x => { if(x) counts[x] = (counts[x]||0)+1; }); else counts[val] = (counts[val]||0)+1; } });
@@ -1746,8 +1913,8 @@
            let headersHtml = tableMaps.map(m => {
                let w = m.tableColWidth || '';
                let widthStyle = w ? `width:${w};` : '';
-               return `<th oncontextmenu="openColumnConfigModal(event, '${m.id}')" class="p-3.5 bg-slate-50 border-r border-b border-slate-200 text-xs font-black text-slate-500 relative align-middle cursor-context-menu hover:bg-slate-100 transition draggable-th" data-table-col-id="${m.id}" style="${widthStyle}">
-                          <div class="flex items-center gap-1.5 pointer-events-none"><span class="w-4 h-4 flex">${svgs.arrows}</span> <span class="line-clamp-2">${m.alias || m.title}</span></div>
+               return `<th class="p-3.5 bg-slate-50 border-r border-b border-slate-200 text-xs font-black text-slate-500 relative align-middle" style="${widthStyle}">
+                          <div class="flex items-center gap-1.5 pointer-events-none"><span class="line-clamp-2">${m.alias || m.title}</span></div>
                        </th>`;
             }).join('');
 
@@ -1818,6 +1985,8 @@
              </div>`;
             container.insertAdjacentHTML('beforeend', tableCard);
         }
+
+        setTimeout(() => { initEChartsWidgets(chartDataQueue); }, 150);
     }
 
     function showLoading(msg) { document.getElementById('loadText').innerText=msg; document.getElementById('loading').classList.remove('hidden'); }
