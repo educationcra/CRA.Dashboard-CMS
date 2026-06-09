@@ -70,8 +70,8 @@
     .preview-tablet { width: 100%; max-width: 820px; background-color: #ffffff; border-radius: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); margin-top: 2rem; margin-bottom: 2rem; border: 8px solid #cbd5e1; }
     .preview-mobile { width: 100%; max-width: 414px; background-color: #ffffff; border-radius: 3rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); margin-top: 2rem; margin-bottom: 2rem; border: 12px solid #1e293b; }
 
-    /* ECharts Responsive Fix */
-    .echart-container { width: 100%; min-height: 350px; }
+    /* ECharts Responsive Fix - ความสูงถูกปรับผ่าน JS อัตโนมัติ */
+    .echart-container { width: 100%; }
 
     @media print {
       .no-print { display: none !important; }
@@ -1075,8 +1075,22 @@
         chartQueue.forEach(item => {
             let dom = document.getElementById(item.id);
             if (!dom) return;
-            
-            // เคลียร์กราฟเก่าถ้ามี เพื่อป้องกันการซ้อนทับกันตอนอัปเดตหน้าจอ
+
+            // --- 1. Dynamic Height Adjustment ---
+            // For H-Bar: Expand height based on number of rows to prevent squished bars
+            if (item.type === 'chart_bar_h') {
+                let neededHeight = item.data.length * 50 + 100; // 50px per bar + margins
+                if (neededHeight > 350) dom.style.height = neededHeight + 'px';
+                else dom.style.height = '350px';
+            }
+            // For Pie: Give it a solid default height so legend has room
+            else if (item.type === 'chart_pie') {
+                dom.style.height = '420px'; // Increased height
+            }
+            else {
+                dom.style.height = '350px'; // Default for V-bar
+            }
+
             let existingChart = echarts.getInstanceByDom(dom);
             if (existingChart) { existingChart.dispose(); }
 
@@ -1087,63 +1101,95 @@
                 let pieData = item.data.map(d => ({ name: d[0], value: d[1] }));
                 option = {
                     color: chartColorPalette,
-                    tooltip: { trigger: 'item', textStyle: { fontFamily: 'Google Sans, Noto Sans Thai' } },
-                    legend: { 
-                        show: item.showLegend, // เชื่อมกับระบบเปิดปิด
-                        top: '0%', left: 'center', icon: 'circle', textStyle: { color: item.cText, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' } 
+                    tooltip: {
+                        trigger: 'item',
+                        textStyle: { fontFamily: 'Google Sans, Noto Sans Thai' },
+                        formatter: '<b>{b}</b><br/>{c} คน ({d}%)' // Tooltip shows full details
+                    },
+                    legend: {
+                        show: item.showLegend,
+                        type: 'scroll', // 🟢 Make legend scrollable
+                        orient: 'horizontal',
+                        bottom: '0%',   // 🟢 Put legend at bottom
+                        left: 'center',
+                        icon: 'circle',
+                        padding: [15, 10, 0, 10], // Space from pie
+                        textStyle: {
+                            color: item.cText,
+                            fontFamily: 'Google Sans, Noto Sans Thai',
+                            fontWeight: 'bold',
+                            width: 250,            // Limit width
+                            overflow: 'truncate'   // Truncate long legends so they don't break layout
+                        },
+                        pageIconColor: item.cAccent,
+                        pageTextStyle: { color: item.cText }
                     },
                     series: [{
                         type: 'pie',
-                        radius: ['45%', '75%'], // Donut style
-                        center: ['50%', '55%'],
+                        radius: ['35%', '60%'], // 🟢 Slightly smaller radius
+                        center: ['50%', '42%'], // 🟢 Shift center up
                         avoidLabelOverlap: true,
                         itemStyle: { borderRadius: 5, borderColor: item.cBg, borderWidth: 2 },
                         label: {
                             show: true,
                             formatter: function (params) {
                                 let pct = item.total > 0 ? ((params.value / item.total) * 100).toFixed(1) : 0;
-                                // 🟢 หากเปิด Legend อยู่ ระบบจะซ่อนชื่อตรงเส้นชี้ เพื่อไม่ให้ซ้ำซ้อน
+                                // 🟢 If Legend is ON, hide names on lines. If OFF, show names.
                                 if (item.showLegend) {
                                     return `{val|${params.value} คน}\n{pct|${pct}%}`;
                                 } else {
-                                // 🔴 หากปิด Legend ระบบจะนำชื่อมาแสดงตรงเส้นชี้แทน
-                                    return `{name|${params.name}}\n{val|${params.value} คน}\n{pct|${pct}%}`;
+                                    let name = params.name.length > 25 ? params.name.substring(0, 25) + '...' : params.name;
+                                    return `{name|${name}}\n{val|${params.value} คน}\n{pct|${pct}%}`;
                                 }
                             },
                             rich: {
-                                name: { fontSize: 12, color: item.cText, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai' },
-                                val: { fontSize: 16, color: item.cText, fontWeight: '900', padding: [4, 0], fontFamily: 'Google Sans, Noto Sans Thai' },
-                                pct: { fontSize: 11, color: item.cSub, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' }
+                                name: { fontSize: 11, color: item.cText, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai', padding: [0,0,4,0] },
+                                val: { fontSize: 14, color: item.cText, fontWeight: '900', padding: [4, 0], fontFamily: 'Google Sans, Noto Sans Thai' },
+                                pct: { fontSize: 10, color: item.cSub, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' }
                             }
                         },
                         labelLine: { show: true, length: 15, length2: 20, smooth: true, lineStyle: { width: 2 } },
                         data: pieData
                     }]
                 };
-            } 
+            }
             else if (item.type === 'chart_bar_h') {
-                let categories = item.data.map(d => d[0]).reverse(); // เอาค่ามากลับด้านให้แท่งใหญ่สุดอยู่บน
+                let categories = item.data.map(d => d[0]).reverse();
                 let values = item.data.map(d => d[1]).reverse();
                 option = {
                     color: [chartColorPalette[0]],
                     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, textStyle: { fontFamily: 'Google Sans, Noto Sans Thai' } },
-                    grid: { left: '3%', right: '4%', bottom: '3%', top: '5%', containLabel: true },
+                    // 🟢 More right padding for labels, containLabel ensures Y-axis text isn't cut off
+                    grid: { left: '3%', right: '12%', bottom: '3%', top: '5%', containLabel: true },
                     xAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed', color: item.cSub + '33' } }, axisLabel: { color: item.cSub, fontFamily: 'Google Sans, Noto Sans Thai' } },
-                    yAxis: { type: 'category', data: categories, axisLabel: { color: item.cText, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai' }, axisLine: { show: false }, axisTick: { show: false } },
+                    yAxis: {
+                        type: 'category',
+                        data: categories,
+                        axisLabel: {
+                            color: item.cText,
+                            fontWeight: 'bold',
+                            fontFamily: 'Google Sans, Noto Sans Thai',
+                            width: 250, // 🟢 Set max width for categories
+                            overflow: 'break' // 🟢 "ห้ามตัดคำ" - Wrap text into new lines
+                        },
+                        axisLine: { show: false },
+                        axisTick: { show: false }
+                    },
                     series: [{
                         type: 'bar',
                         data: values,
                         itemStyle: { borderRadius: [0, 4, 4, 0] },
+                        barMaxWidth: 40, // Prevent bars from becoming huge if there are only 1-2 items
                         label: {
                             show: true,
-                            position: 'right', // ป้องกันตัวอักษรโดนทับด้วยการวางไว้ด้านขวาของแท่งเสมอ
+                            position: 'right', // 🟢 Label on right
                             formatter: function (params) {
                                 let pct = item.total > 0 ? ((params.value / item.total) * 100).toFixed(2) : 0;
-                                return `{val|${params.value} คน} {pct|คิดเป็น ${pct}%}`;
+                                return `{val|${params.value} คน}  {pct|คิดเป็น ${pct}%}`;
                             },
                             rich: {
                                 val: { color: item.cText, fontSize: 13, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai' },
-                                pct: { color: item.cSub, fontSize: 12, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai' }
+                                pct: { color: item.cSub, fontSize: 11, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai' }
                             }
                         }
                     }]
@@ -1154,17 +1200,34 @@
                 let values = item.data.map(d => ({ value: d[1], itemStyle: { color: chartColorPalette[categories.indexOf(d[0]) % chartColorPalette.length] } }));
                 option = {
                     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, textStyle: { fontFamily: 'Google Sans, Noto Sans Thai' } },
-                    legend: { 
-                        show: item.showLegend, // เชื่อมกับระบบเปิดปิด
-                        data: categories, top: '0%', icon: 'circle', textStyle: { color: item.cText, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' } 
+                    legend: {
+                        show: item.showLegend,
+                        type: 'scroll', // 🟢 Scrollable legend
+                        top: '0%', left: 'center', icon: 'circle',
+                        textStyle: { color: item.cText, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' },
+                        pageIconColor: item.cAccent
                     },
-                    grid: { left: '3%', right: '4%', bottom: '5%', top: '20%', containLabel: true },
-                    xAxis: { type: 'category', data: categories, axisLabel: { color: item.cText, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai', interval: 0, rotate: categories.length > 5 ? 30 : 0 }, axisLine: { show: false }, axisTick: { show: false } },
+                    // 🟢 More top padding if legend is present
+                    grid: { left: '3%', right: '4%', bottom: '5%', top: item.showLegend ? '20%' : '10%', containLabel: true },
+                    xAxis: {
+                        type: 'category',
+                        data: categories,
+                        axisLabel: {
+                            color: item.cText,
+                            fontWeight: 'bold',
+                            fontFamily: 'Google Sans, Noto Sans Thai',
+                            interval: 0,
+                            width: 80, // Limit width of X labels
+                            overflow: 'break' // 🟢 Wrap text if long
+                        },
+                        axisLine: { show: false }, axisTick: { show: false }
+                    },
                     yAxis: { type: 'value', splitLine: { lineStyle: { color: item.cSub + '33' } }, axisLabel: { color: item.cSub, fontFamily: 'Google Sans, Noto Sans Thai' } },
                     series: [{
                         type: 'bar',
                         data: values,
                         itemStyle: { borderRadius: [4, 4, 0, 0] },
+                        barMaxWidth: 60,
                         label: {
                             show: true,
                             position: 'top',
