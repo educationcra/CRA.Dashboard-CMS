@@ -499,6 +499,14 @@
            renderWidgetsViewOnlyContainer(currentAppConfig.mapping);
        }
     }
+    
+    window.updateWidgetLegendToggle = function(id, isChecked) {
+        let match = liveWidgetMapping.find(m => m.id === id);
+        if(match) {
+            match.showLegend = isChecked;
+            renderLiveCanvasDashboardSpace();
+        }
+    }
 
     function setPreviewMode(mode, btn) {
         window.currentPreviewDevice = mode;
@@ -828,6 +836,20 @@
                 `;
             }
 
+            // เพิ่ม Toggle สำหรับเปิด/ปิด Legend เฉพาะตัวกราฟ
+            if (['chart_pie', 'chart_bar_h', 'chart_bar_v'].includes(map.type)) {
+                let isLegendOn = map.showLegend !== false; // ค่าตั้งต้นคือเปิดเสมอ
+                extraOptionsHtml += `
+                    <div class="mt-1.5 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                        <label class="text-[10px] font-bold text-slate-600 flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" onchange="updateWidgetLegendToggle('${map.id}', this.checked)" class="accent-indigo-600 rounded w-3 h-3" ${isLegendOn ? 'checked' : ''}> 
+                            แสดงแถบสัญลักษณ์ (Legend)
+                        </label>
+                        ${map.type === 'chart_pie' ? `<div class="text-[9px] text-slate-400 mt-1 pl-4">* หากเปิด Legend ชื่อบนเส้นชี้จะถูกซ่อนเพื่อลดความซ้ำซ้อน</div>` : ''}
+                    </div>
+                `;
+            }
+
             if (map.type === 'custom_box') {
                  extraOptionsHtml += `
                     <div class="mt-1.5 p-2 bg-emerald-50 rounded-lg border border-emerald-100 space-y-1.5">
@@ -1066,7 +1088,10 @@
                 option = {
                     color: chartColorPalette,
                     tooltip: { trigger: 'item', textStyle: { fontFamily: 'Google Sans, Noto Sans Thai' } },
-                    legend: { top: '0%', left: 'center', icon: 'circle', textStyle: { color: item.cText, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' } },
+                    legend: { 
+                        show: item.showLegend, // เชื่อมกับระบบเปิดปิด
+                        top: '0%', left: 'center', icon: 'circle', textStyle: { color: item.cText, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' } 
+                    },
                     series: [{
                         type: 'pie',
                         radius: ['45%', '75%'], // Donut style
@@ -1077,7 +1102,13 @@
                             show: true,
                             formatter: function (params) {
                                 let pct = item.total > 0 ? ((params.value / item.total) * 100).toFixed(1) : 0;
-                                return `{name|${params.name}}\n{val|${params.value} คน}\n{pct|${pct}%}`;
+                                // 🟢 หากเปิด Legend อยู่ ระบบจะซ่อนชื่อตรงเส้นชี้ เพื่อไม่ให้ซ้ำซ้อน
+                                if (item.showLegend) {
+                                    return `{val|${params.value} คน}\n{pct|${pct}%}`;
+                                } else {
+                                // 🔴 หากปิด Legend ระบบจะนำชื่อมาแสดงตรงเส้นชี้แทน
+                                    return `{name|${params.name}}\n{val|${params.value} คน}\n{pct|${pct}%}`;
+                                }
                             },
                             rich: {
                                 name: { fontSize: 12, color: item.cText, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai' },
@@ -1123,7 +1154,10 @@
                 let values = item.data.map(d => ({ value: d[1], itemStyle: { color: chartColorPalette[categories.indexOf(d[0]) % chartColorPalette.length] } }));
                 option = {
                     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, textStyle: { fontFamily: 'Google Sans, Noto Sans Thai' } },
-                    legend: { data: categories, top: '0%', icon: 'circle', textStyle: { color: item.cText, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' } },
+                    legend: { 
+                        show: item.showLegend, // เชื่อมกับระบบเปิดปิด
+                        data: categories, top: '0%', icon: 'circle', textStyle: { color: item.cText, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' } 
+                    },
                     grid: { left: '3%', right: '4%', bottom: '5%', top: '20%', containLabel: true },
                     xAxis: { type: 'category', data: categories, axisLabel: { color: item.cText, fontWeight: 'bold', fontFamily: 'Google Sans, Noto Sans Thai', interval: 0, rotate: categories.length > 5 ? 30 : 0 }, axisLine: { show: false }, axisTick: { show: false } },
                     yAxis: { type: 'value', splitLine: { lineStyle: { color: item.cSub + '33' } }, axisLabel: { color: item.cSub, fontFamily: 'Google Sans, Noto Sans Thai' } },
@@ -1290,7 +1324,7 @@
                     ${noteHtml}
                 </div>`;
                 
-                chartDataQueue.push({ id: `echart_${m.id}`, type: m.type, data: sorted, total: denominator, cBg, cText, cSub, cAccent });
+                chartDataQueue.push({ id: `echart_${m.id}`, type: m.type, data: sorted, total: denominator, cBg, cText, cSub, cAccent, showLegend: m.showLegend !== false });
             }
             // แบบตารางแจกแจงดั้งเดิม
             else if (m.type === 'single_choice' || m.type === 'multi_choice') {
@@ -1864,7 +1898,7 @@
                     <div id="echart_${m.id}_view" class="echart-container flex-1 mt-2"></div>
                 </div>`;
                 
-                chartDataQueue.push({ id: `echart_${m.id}_view`, type: m.type, data: sorted, total: denominator, cBg, cText, cSub, cAccent });
+                chartDataQueue.push({ id: `echart_${m.id}_view`, type: m.type, data: sorted, total: denominator, cBg, cText, cSub, cAccent, showLegend: m.showLegend !== false });
             }
             else if (m.type === 'single_choice' || m.type === 'multi_choice') {
                 let counts = {}; let validTotal = 0;
