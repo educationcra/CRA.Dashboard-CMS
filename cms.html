@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRA Advanced Visual Workspace CMS</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      safelist: [
+        'md:col-span-12', 'md:col-span-6', 'md:col-span-4', 'md:col-span-3',
+        'lg:col-span-12', 'lg:col-span-6', 'lg:col-span-4', 'lg:col-span-3',
+        'col-span-12', 'col-span-6', 'col-span-4', 'col-span-3',
+        'bg-indigo-50', 'text-indigo-700', 'bg-cyan-50', 'text-cyan-700',
+        'bg-emerald-50', 'text-emerald-700', 'text-rose-500', 'text-indigo-500', 
+        'text-emerald-500', 'text-amber-500', 'text-cyan-500', 'text-purple-500', 
+        'text-pink-500', 'text-slate-500', 'text-blue-500'
+      ]
+    }
+  </script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script>
+    // ⚠️ นำ URL ของ Web App ที่ Deploy ใหม่มาใส่ตรงนี้เช่นกัน ⚠️
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxPSNCB1UBLRiTDtktn_lG8vr4zESTvUjrb44J6yhu5qMQ3jw4J-7E7UCctRcQdHPKcnQ/exec"; 
+  </script>
+
+  <style>
+    body { font-family: 'Google Sans', 'Noto Sans Thai', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
+    
+    .app-split-container { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+    .sidebar-editor { width: 420px; min-width: 420px; max-width: 450px; background: #ffffff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; height: 100vh; z-index: 40; box-shadow: 4px 0 20px rgba(0,0,0,0.02); }
+    .canvas-preview { flex: 1; height: 100vh; display: flex; flex-direction: column; overflow-y: auto; background: #f1f5f9; }
+    
+    .glass-card { border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; }
+    
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    .custom-select-wrapper { position: relative; user-select: none; width: 100%; }
+    .custom-select { position: relative; display: flex; flex-direction: column; }
+    .custom-select__trigger { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; font-size: 0.7rem; font-weight: 700; color: #475569; }
+    .custom-select__trigger:hover { border-color: #6366f1; box-shadow: 0 2px 4px rgba(99,102,241,0.05); }
+    .custom-options { position: absolute; display: block; top: 100%; left: 0; right: 0; border: 1px solid #e2e8f0; border-radius: 0.5rem; box-sizing: border-box; background: #ffffff; transition: all 0.2s; opacity: 0; visibility: hidden; pointer-events: none; z-index: 60; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); margin-top: 4px; max-height: 280px; overflow-y: auto; }
+    .custom-select.open .custom-options { opacity: 1; visibility: visible; pointer-events: all; }
+    .custom-option { position: relative; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; cursor: pointer; transition: all 0.2s; font-size: 0.7rem; font-weight: 600; color: #475569; }
+    .custom-option:hover { background-color: #f8fafc; color: #0f172a; }
+
+    .live-widget-box { transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+    .live-widget-box:hover { outline: 2px dashed #4f46e5; outline-offset: 4px; cursor: grab; }
+    .live-widget-box:active { cursor: grabbing; }
+    .sortable-ghost { opacity: 0.3; background: #eef2ff; border: 2px dashed #4f46e5; }
+    
+    /* Responsive Table Settings */
+    .resizable-table { table-layout: fixed; border-collapse: collapse; width: 100%; }
+    .table-auto-scroll { min-width: 800px; } 
+    th { position: relative; } 
+    td, th { word-wrap: break-word; white-space: normal !important; }
+
+    .preview-desktop { width: 100%; max-width: 76rem; }
+    .preview-tablet { width: 100%; max-width: 820px; background-color: #ffffff; border-radius: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); margin-top: 2rem; margin-bottom: 2rem; border: 8px solid #cbd5e1; }
+    .preview-mobile { width: 100%; max-width: 414px; background-color: #ffffff; border-radius: 3rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); margin-top: 2rem; margin-bottom: 2rem; border: 12px solid #1e293b; }
+
+    @media print {
+      .no-print { display: none !important; }
+      body { background-color: white !important; overflow: visible !important; }
+      .container, .app-split-container { display: block !important; height: auto !important; width: 100% !important; }
+      .sidebar-editor { display: none !important; }
+      .canvas-preview { display: block !important; height: auto !important; overflow: visible !important; background: white !important; }
+      .glass-card { box-shadow: none !important; border: 1px solid #cbd5e1 !important; margin-bottom: 2rem !important; }
+      .live-widget-box:hover { outline: none !important; }
+      .overflow-y-auto, .overflow-x-auto { overflow: visible !important; max-height: none !important; height: auto !important; }
+      .glass-card, tr, .col-span-12, .md\:col-span-6, .md\:col-span-4, .md\:col-span-3, .lg\:col-span-6, .lg\:col-span-4, .lg\:col-span-3 { break-inside: avoid; page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased select-none">
+
+  <div id="widgetContextMenu" class="hidden fixed bg-white border border-slate-200 rounded-2xl shadow-2xl p-2 w-56 z-[100] no-print">
+      <div class="text-[10px] font-black text-slate-400 px-3 py-1.5 uppercase tracking-wider flex justify-between items-center">
+          <span>ปรับขนาด Grid คอลัมน์</span>
+          <span id="ctxDeviceBadge" class="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-[8px]">Desktop</span>
+      </div>
+      <button onclick="updateLiveWidgetGridWidth(12)" class="w-full text-left px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center justify-between"><span>กว้าง 100% (เต็มแถว)</span> <span class="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-400">12</span></button>
+      <button onclick="updateLiveWidgetGridWidth(6)" class="w-full text-left px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center justify-between"><span>กว้าง 50% (ครึ่งแถว)</span> <span class="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-400">6</span></button>
+      <button onclick="updateLiveWidgetGridWidth(4)" class="w-full text-left px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center justify-between"><span>กว้าง 33% (1 ใน 3)</span> <span class="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-400">4</span></button>
+      <button onclick="updateLiveWidgetGridWidth(3)" class="w-full text-left px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center justify-between"><span>กว้าง 25% (1 ใน 4)</span> <span class="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-400">3</span></button>
+      
+      <div class="border-t border-slate-100 my-1.5"></div>
+      <button onclick="openRenameWidgetModal()" class="w-full text-left px-3 py-2 text-sm font-bold text-amber-600 hover:bg-amber-50 rounded-xl flex items-center gap-2"><span id="ctxPencilIcon"></span> เปลี่ยนชื่อหัวข้อการ์ด</button>
+      
+      <div class="border-t border-slate-100 my-1.5"></div>
+      <button onclick="openWidgetColorConfig()" class="w-full text-left px-3 py-2 text-sm font-bold text-indigo-600 hover:bg-indigo-50 rounded-xl flex items-center gap-2"><span id="ctxPaletteIcon"></span> ปรับแต่งสไตล์และสีสัน</button>
+      <button onclick="deleteLiveWidgetFromCanvas()" class="w-full text-left px-3 py-2 text-sm font-bold text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2"><span id="ctxTrashIcon"></span> ลบออกจากหน้ารัน</button>
+  </div>
+
+  <div id="loading" class="fixed inset-0 bg-white/95 z-[60] flex flex-col items-center justify-center hidden">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600 mb-4"></div>
+    <p class="text-indigo-700 font-bold text-xl" id="loadText">กำลังเชื่อมต่อฐานข้อมูล...</p>
+  </div>
+
+  <div id="dashboardViewOnlyMode" class="hidden container mx-auto px-4 py-8 max-w-[85rem]">
+       <div class="flex justify-between items-center mb-6 no-print">
+           <span class="bg-indigo-50 text-indigo-700 px-4 py-2.5 rounded-xl font-bold text-sm border border-indigo-200 flex items-center gap-2" id="vGlobeIcon"></span>
+           <div id="sharedGlobalFilterZone" class="w-full max-w-md ml-auto"></div>
+           <button onclick="window.print()" class="ml-4 px-5 py-2.5 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 flex items-center gap-2" id="vPrintIcon"></button>
+       </div>
+       <div class="bg-gradient-to-r from-[#0a2240] to-indigo-900 rounded-[2rem] p-8 text-white flex items-center shadow-xl mb-8 border-b-4 border-cyan-400">
+          <div id="vRenderLogo" class="hidden mr-6"></div>
+          <div>
+             <h2 class="text-2xl md:text-4xl font-black mb-2" id="vRenderTitle">CRA Dashboard Presentation</h2>
+             <p class="text-indigo-200 text-sm font-medium">CRA Automated Dashboard Presentation</p>
+          </div>
+       </div>
+       <div id="vWidgetContainer" class="grid grid-cols-12 gap-6 pb-12"></div>
+  </div>
+
+  <div id="myProjectsZone" class="container mx-auto px-4 py-8 max-w-[85rem] no-print">
+       <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 border-b border-slate-200 pb-6">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 bg-indigo-900 rounded-2xl flex justify-center items-center text-white shadow-md" id="hdrLogoIcon"></div>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-black text-[#0a2240] tracking-tight">CRA Workspace Platform</h1>
+                <p class="text-slate-500 font-medium text-sm">ระบบบริหารจัดการแผงวิเคราะห์รายงานผลอัจฉริยะ</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-sm font-bold bg-white px-4 py-2.5 rounded-xl text-slate-600 border border-slate-200 shadow-sm flex items-center gap-2">
+              <span class="text-indigo-500" id="hdrUserSvg"></span> <span id="userEmailTxt">กำลังตรวจสอบ...</span>
+            </div>
+            <button onclick="logout()" class="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition" id="hdrLogoutSvg"></button>
+          </div>
+       </header>
+
+       <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-black text-[#0a2240] flex items-center gap-2" id="hdrFolderSvg"></h2>
+          <button onclick="openProjectBuilder()" class="px-5 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 shadow-md shadow-indigo-100 transition-all"><span class="mr-1 inline-block" id="btnPlusSvg"></span> สร้างแดชบอร์ดใหม่</button>
+       </div>
+       <div id="projectList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+  </div>
+
+  <div id="cmsSplitEditorZone" class="app-split-container hidden no-print">
+    
+    <aside class="sidebar-editor">
+        <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-indigo-900 rounded-xl flex justify-center items-center text-white shadow" id="sbLogoIcon"></div>
+                <div>
+                    <h1 class="font-black text-slate-800 text-sm leading-tight">CRA Builder</h1>
+                    <p class="text-[10px] text-slate-400 font-bold">WORKSPACE CMS PLATFORM V5</p>
+                </div>
+            </div>
+            <button onclick="saveProjectConfigStateToServer()" class="px-4 py-2.5 bg-emerald-600 text-white text-xs font-black rounded-lg hover:bg-emerald-700 shadow flex items-center gap-1" id="sbSaveBtnIcon"></button>
+        </div>
+
+        <div class="p-4 border-b border-slate-100 bg-white space-y-3 shadow-sm z-10">
+            <input type="text" id="dashTitleInput" placeholder="ระบุชื่อหัวข้อแดชบอร์ด *" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:border-indigo-500 focus:bg-white transition">
+            <input type="text" id="dashLogoInput" placeholder="ลิงก์รูปโลโก้รายงาน (ถ้ามี)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 focus:bg-white transition">
+            <div class="grid grid-cols-12 gap-2">
+                <input type="text" id="sheetIdInput" placeholder="Google Spreadsheet ID *" class="col-span-8 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 focus:bg-white transition">
+                <button onclick="fetchHeaders()" class="col-span-4 bg-slate-800 text-white font-black text-xs rounded-xl hover:bg-slate-700 transition">ดึงข้อมูล</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="sheet1Input" placeholder="ชื่อชีทหลัก (ลงทะเบียน)" class="px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg text-[11px] font-bold outline-none">
+                <input type="text" id="sheet2Input" placeholder="ชื่อชีทรอง (เช็คอิน) ถ้ามี" class="px-3 py-1.5 bg-cyan-50 border border-cyan-100 rounded-lg text-[11px] font-bold outline-none">
+            </div>
+
+            <div class="mt-2 p-2 bg-slate-50 rounded-xl border border-slate-200 flex flex-col gap-1.5 text-[11px]">
+                 <div class="flex items-center gap-1.5">
+                     <input type="checkbox" id="selectAllSidebarChks" onchange="toggleBulkSelectAllSidebarRows(this.checked)" class="accent-indigo-600 rounded cursor-pointer">
+                     <span class="font-bold text-slate-500">เลือกทั้งหมดเพื่อสั่งการแบบกลุ่ม</span>
+                 </div>
+                 
+                 <div class="grid grid-cols-2 gap-1.5 relative">
+                     <div class="custom-select-wrapper">
+                         <input type="hidden" id="bulkTypeSelectHidden" value="">
+                         <div class="custom-select" id="dd_bulk_type">
+                             <div class="custom-select__trigger" onclick="toggleCustomDropdown('dd_bulk_type', event)" style="padding: 0.35rem 0.5rem; border-color: #cbd5e1;">
+                                 <div class="flex items-center gap-1 selected-content">
+                                     <span class="text-slate-400">-- เปลี่ยนประเภทกลุ่ม --</span>
+                                 </div>
+                                 <span class="text-slate-400" id="dd_bulk_type_arrow"></span>
+                             </div>
+                             <div class="custom-options" id="bulk_type_options">
+                                 <div class="custom-option" onclick="selectBulkType('', '-- เปลี่ยนประเภทกลุ่ม --', event)">
+                                    <span class="text-slate-400">-- ไม่เปลี่ยน --</span>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+
+                     <div class="custom-select-wrapper">
+                         <input type="hidden" id="bulkLayoutSelectHidden" value="">
+                         <div class="custom-select" id="dd_bulk_layout">
+                             <div class="custom-select__trigger" onclick="toggleCustomDropdown('dd_bulk_layout', event)" style="padding: 0.35rem 0.5rem; border-color: #cbd5e1;">
+                                 <div class="flex items-center gap-1 selected-content">
+                                     <span class="text-slate-400">-- เปลี่ยนขนาดกลุ่ม --</span>
+                                 </div>
+                                 <span class="text-slate-400" id="dd_bulk_layout_arrow"></span>
+                             </div>
+                             <div class="custom-options">
+                                 <div class="custom-option" onclick="selectBulkLayout('', '-- เปลี่ยนขนาดกลุ่ม --', event)"><span class="text-slate-400">-- ไม่เปลี่ยน --</span></div>
+                                 <div class="custom-option" onclick="selectBulkLayout('12', 'กว้าง 100%', event)"><span>กว้าง 100%</span></div>
+                                 <div class="custom-option" onclick="selectBulkLayout('6', 'กว้าง 50%', event)"><span>กว้าง 50%</span></div>
+                                 <div class="custom-option" onclick="selectBulkLayout('4', 'กว้าง 33%', event)"><span>กว้าง 33%</span></div>
+                                 <div class="custom-option" onclick="selectBulkLayout('3', 'กว้าง 25%', event)"><span>กว้าง 25%</span></div>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+
+                 <button onclick="executeSidebarBulkActionState()" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-black text-center transition shadow-sm mt-1">บังคับใช้ฟังก์ชันกลุ่มพร้อมกัน</button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50" id="sbWidgetListContainer">
+            <div class="text-center p-8 text-xs font-bold text-slate-400">กรุณากรอกข้อมูลและกดดึงโครงสร้างข้อมูลด้านบน</div>
+        </div>
+        
+        <div class="p-3 border-t border-slate-200 bg-white flex justify-between items-center text-xs">
+            <button onclick="closeProjectBuilder()" class="px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition flex items-center gap-1" id="sbBackBtnIcon"></button>
+            <span class="font-bold text-slate-400" id="userEmailBadgeTxt">checking...</span>
+        </div>
+    </aside>
+
+    <main class="canvas-preview bg-[#f1f5f9] flex flex-col relative w-full">
+        <div class="sticky top-0 z-30 bg-white/95 border-b border-slate-200 px-6 py-3.5 flex justify-between items-center shadow-sm w-full">
+            <div class="flex items-center gap-3">
+                <span class="px-2 py-0.5 bg-indigo-600 text-white text-[10px] font-black rounded uppercase hidden xl:inline-block">Live Designer</span>
+                <button onclick="refreshDataSilently()" class="px-3 py-1.5 bg-white border border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-slate-600 rounded-lg text-[11px] font-bold flex items-center gap-1.5 shadow-sm transition">
+                    <span id="canvasRefreshIcon"></span> รีเฟรชข้อมูล
+                </button>
+                <span class="text-xs font-bold text-slate-500 hidden 2xl:inline-block">ลากสลับตำแหน่งได้ / คลิกขวาเพื่อตั้งค่า</span>
+            </div>
+
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button onclick="setPreviewMode('desktop', this)" class="vp-btn relative px-4 py-1.5 rounded-lg text-indigo-600 bg-white shadow-sm transition font-bold" title="Desktop">
+                    <span id="iconDesktop"></span>
+                    <div class="vp-indicator absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-indigo-600 rounded-t-full transition-opacity opacity-100"></div>
+                </button>
+                <button onclick="setPreviewMode('tablet', this)" class="vp-btn relative px-4 py-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/50 transition font-bold" title="Tablet">
+                    <span id="iconTablet"></span>
+                    <div class="vp-indicator absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-indigo-600 rounded-t-full transition-opacity opacity-0"></div>
+                </button>
+                <button onclick="setPreviewMode('mobile', this)" class="vp-btn relative px-4 py-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/50 transition font-bold" title="Mobile">
+                    <span id="iconMobile"></span>
+                    <div class="vp-indicator absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-indigo-600 rounded-t-full transition-opacity opacity-0"></div>
+                </button>
+            </div>
+
+            <div id="canvasGlobalFilterZone" class="w-48 xl:w-64"></div>
+        </div>
+
+        <div class="w-full flex-1 flex flex-col pt-4 pb-12 px-2 sm:px-6"> 
+             <div id="previewDeviceWrapper" class="transition-all duration-500 mx-auto preview-desktop w-full relative">
+                 <div class="p-2 sm:p-6 md:p-8">
+                     <div class="bg-gradient-to-r from-[#0a2240] to-indigo-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl mb-6 flex items-center justify-between border-b-4 border-cyan-400">
+                        <div>
+                           <h2 class="text-xl sm:text-2xl font-black tracking-tight" id="canvasRenderTitle">แผงรายงานผลสถิติอัจฉริยะ</h2>
+                           <p class="text-indigo-200 text-xs font-medium">CRA Automated Real-time Dashboard Layout Builder</p>
+                        </div>
+                        <div id="canvasLogoFrame"></div>
+                     </div>
+
+                     <div id="liveCanvasGridContainer" class="grid grid-cols-12 gap-4 sm:gap-6 min-h-[350px]"></div>
+                     
+                     <div class="mt-8 flex justify-center">
+                         <button onclick="openSmartAddWidgetModal()" class="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-lg shadow-indigo-100 transition-all flex items-center gap-2 text-xs" id="canvasAddBtnIcon"></button>
+                     </div>
+                 </div>
+             </div>
+        </div>
+    </main>
+
+  </div>
+
+  <script>
+    // ไอคอน SVG ต่างๆ (คงเดิม)
+    const svgs = {
+        layerPlus: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>`,
+        user: `<svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>`,
+        logout: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>`,
+        folderOpen: `<svg class="w-6 h-6 text-indigo-600 inline-block mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"></path></svg>`,
+        pencil: `<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path></svg>`,
+        trash: `<svg class="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9z" clip-rule="evenodd"></path></svg>`,
+        pieAlt: `<svg class="w-5 h-5 inline-block" fill="currentColor" viewBox="0 0 20 20"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path></svg>`,
+        copy: `<svg class="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 110 2H9a1 1 0 01-1-1z"></path><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"></path></svg>`,
+        leftArrow: `<svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path> กลับหน้าคลัง`,
+        disk: `<svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 20 20"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z"></path> บันทึกโครงสร้าง`,
+        globe: `<svg class="w-4 h-4 text-indigo-700 inline" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16z"></path></svg>`,
+        print: `<svg class="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd"></path> พิมพ์รายงาน / PDF`,
+        filter: `<svg class="w-4 h-4 text-indigo-600 inline" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd"></path></svg>`,
+        info: `<svg class="w-3.5 h-3.5 inline-block text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>`,
+        check: `<svg class="w-3.5 h-3.5 text-emerald-600 inline-block" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>`,
+        arrows: `<svg class="w-4 h-4 text-slate-400 inline cursor-grab active:cursor-grabbing" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L11 6.414V13.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 011.414-1.414L9 13.586V6.414L7.707 7.707A1 1 0 016.293 6.293l3-3A1 1 0 0110 3z" clip-rule="evenodd"></path></svg>`,
+        crossCircle: `<svg class="w-3.5 h-3.5 inline-block text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>`,
+        link: `<svg class="w-3 h-3 inline-block" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path></svg>`,
+        add: `<svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"></path>`,
+        table: `<svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 4a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2H5zm3 2h6v2H8V6zm-3 0h2v2H5V6zm0 3h2v2H5V6zm0 3h2v2H5V9zm3 0h6v2H8V9zm-3 3h2v2H5v-2zm3 0h6v2H8v-2z" clip-rule="evenodd"></path></svg>`,
+        histogram: `<svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path></svg>`,
+        comment: `<svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"></path></svg>`,
+        refresh: `<svg class="w-3.5 h-3.5 inline-block" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path></svg>`,
+        users: `<svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path></svg>`,
+        pie: `<svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 20 20"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"></path></svg>`,
+        star: `<svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>`,
+        listCheck: `<svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>`,
+        angleDown: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>`,
+        paintBrush: `<svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>`,
+        rank1: `<svg class="w-5 h-5 text-amber-500 inline-block" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4L22 9.6l-5.6 5.2 1.6 7.6L12 19.2 6.4 22.4l1.6-7.6L2.4 9.6l7.6-.2L12 2z"/></svg>`,
+        rank2: `<svg class="w-5 h-5 text-slate-400 inline-block" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4L22 9.6l-5.6 5.2 1.6 7.6L12 19.2 6.4 22.4l1.6-7.6L2.4 9.6l7.6-.2L12 2z"/></svg>`,
+        rank3: `<svg class="w-5 h-5 text-amber-700 inline-block" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4L22 9.6l-5.6 5.2 1.6 7.6L12 19.2 6.4 22.4l1.6-7.6L2.4 9.6l7.6-.2L12 2z"/></svg>`,
+        deviceDesktop: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 21v1h6v-1l-.75-4M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>`,
+        deviceTablet: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></rect><path d="M12 18h.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`,
+        deviceMobile: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></rect><path d="M12 18h.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`
+    };
+
+    const widgetTypes = [
+        { val: 'ignore', text: 'ไม่นำมาแสดงผล', icon: svgs.crossCircle, color: 'text-rose-500' },
+        { val: 'table_column', text: 'แสดงในตารางรวม (Data Table)', icon: svgs.table, color: 'text-blue-500' },
+        { val: 'kpi_total', text: 'นับจำนวนรวม (KPI ปกติ)', icon: svgs.users, color: 'text-indigo-500' },
+        { val: 'kpi_percent', text: 'KPI นับรวม + เทียบ %', icon: svgs.pie, color: 'text-emerald-500' },
+        { val: 'kpi_compare', text: 'เปรียบเทียบข้อมูล 2 ชีท', icon: svgs.refresh, color: 'text-amber-500' },
+        { val: 'average', text: 'หาค่าเฉลี่ยคะแนน (1-5)', icon: svgs.star, color: 'text-amber-500' },
+        { val: 'single_choice', text: 'แจกแจงความถี่ (ร้อยละ)', icon: svgs.pieAlt, color: 'text-cyan-500' },
+        { val: 'multi_choice', text: 'แจกแจงเลือกหลายข้อ', icon: svgs.listCheck, color: 'text-purple-500' },
+        { val: 'ranking', text: 'จัดอันดับ (Top 10)', icon: svgs.histogram, color: 'text-pink-500' },
+        { val: 'text_list', text: 'รายการข้อเสนอแนะ', icon: svgs.comment, color: 'text-slate-500' }
+    ];
+
+    document.getElementById('hdrLogoIcon').innerHTML = svgs.layerPlus;
+    document.getElementById('hdrUserSvg').innerHTML = svgs.user;
+    document.getElementById('hdrLogoutSvg').innerHTML = svgs.logout;
+    document.getElementById('hdrFolderSvg').innerHTML = svgs.folderOpen + " คลังสถิติและรายงานผล";
+    document.getElementById('vGlobeIcon').innerHTML = svgs.globe + " View Only Mode";
+    document.getElementById('vPrintIcon').innerHTML = svgs.print;
+    document.getElementById('canvasRefreshIcon').innerHTML = svgs.refresh;
+    document.getElementById('ctxTrashIcon').innerHTML = svgs.trash;
+    document.getElementById('ctxPaletteIcon').innerHTML = svgs.paintBrush;
+    document.getElementById('ctxPencilIcon').innerHTML = svgs.pencil;
+    document.getElementById('canvasAddBtnIcon').innerHTML = svgs.add + " เพิ่มชิ้นส่วนข้อมูล (Widget)";
+    document.getElementById('iconDesktop').innerHTML = svgs.deviceDesktop;
+    document.getElementById('iconTablet').innerHTML = svgs.deviceTablet;
+    document.getElementById('iconMobile').innerHTML = svgs.deviceMobile;
+    document.getElementById('btnPlusSvg').innerHTML = svgs.add;
+    
+    // Setup initial Bulk Type Options dynamically
+    document.getElementById('dd_bulk_type_arrow').innerHTML = svgs.angleDown;
+    document.getElementById('dd_bulk_layout_arrow').innerHTML = svgs.angleDown;
+    const bulkTypeOptionsContainer = document.getElementById('bulk_type_options');
+    widgetTypes.forEach(t => {
+        bulkTypeOptionsContainer.innerHTML += `
+            <div class="custom-option" onclick="selectBulkType('${t.val}', '${t.text}', event)">
+                <span class="${t.color} w-3.5 h-3.5 flex items-center justify-center">${t.icon}</span>
+                <span>${t.text}</span>
+            </div>
+        `;
+    });
+
+    let fetchedHeaders1 = [], fetchedHeaders2 = [];
+    let currentAppConfig = { mapping: [] }; 
+    let rawData1 = [], rawData2 = []; 
+    let currentGlobalFilterVal = "ALL"; 
+    let rankingLimits = {};
+    let editingProjectId = null; 
+    let liveSortableInstance = null;
+    let liveWidgetMapping = []; 
+    let activeWidgetContextEl = null;
+    
+    window.currentPreviewDevice = 'desktop'; // State for active viewport
+
+    const currentUserEmail = localStorage.getItem('user_email');
+    const currentUserName = localStorage.getItem('user_name') || currentUserEmail;
+
+    // 🟢 เปลี่ยนมาใช้ Fetch แทน google.script.run
+    async function apiCall(payload) {
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        return await response.json();
+      } catch (error) {
+        throw new Error('Network response was not ok');
+      }
+    }
+
+    window.onload = () => {
+        // ใช้ URLSearchParams แทน google.script.url.getLocation
+        const urlParams = new URLSearchParams(window.location.search);
+        const shareId = urlParams.get('id');
+
+        if (shareId) {
+            document.getElementById('myProjectsZone').remove();
+            document.getElementById('cmsSplitEditorZone').remove();
+            document.getElementById('dashboardViewOnlyMode').classList.remove('hidden');
+            loadSharedDashboardView(shareId);
+        } else {
+            if(!currentUserEmail) {
+                // หากไม่มี Auth ให้กลับไปหน้าเข้าสู่ระบบ
+                window.location.href = "index.html";
+                return;
+            }
+            document.getElementById('userEmailTxt').innerText = currentUserName;
+            document.getElementById('userEmailBadgeTxt').innerText = currentUserName;
+            fetchMyProjects();
+        }
+    }
+
+    // -------------------------------------------------------------
+    //  Core Application Functions
+    // -------------------------------------------------------------
+
+    function getIsOriginal(m) {
+        if (m.isOriginal !== undefined) return m.isOriginal;
+        if (m.id && (m.id.startsWith('w_s1_') || m.id.startsWith('w_s2_') || m.id.startsWith('w_init_'))) return true;
+        return false;
+    }
+
+    function toggleCustomDropdown(id, event) {
+        if(event) event.stopPropagation();
+        const dd = document.getElementById(id);
+        const isOpen = dd.classList.contains('open');
+        document.querySelectorAll('.custom-select.open').forEach(el => {
+            if(el.id !== id) el.classList.remove('open');
+        });
+        if(!isOpen) dd.classList.add('open');
+        else dd.classList.remove('open');
+    }
+
+    window.selectBulkType = function(val, text, event) {
+        if(event) event.stopPropagation();
+        document.getElementById('bulkTypeSelectHidden').value = val;
+        const trigger = document.querySelector('#dd_bulk_type .selected-content');
+        if(val) {
+            const t = widgetTypes.find(w => w.val === val);
+            if(t) {
+                trigger.innerHTML = `<span class="${t.color} w-3.5 h-3.5 flex items-center justify-center">${t.icon}</span><span class="truncate max-w-[120px] text-slate-700">${text}</span>`;
+            }
+        } else {
+            trigger.innerHTML = `<span class="text-slate-400">-- เปลี่ยนประเภทกลุ่ม --</span>`;
+        }
+        document.getElementById('dd_bulk_type').classList.remove('open');
+    }
+
+    window.selectBulkLayout = function(val, text, event) {
+        if(event) event.stopPropagation();
+        document.getElementById('bulkLayoutSelectHidden').value = val;
+        const trigger = document.querySelector('#dd_bulk_layout .selected-content');
+        if(val) {
+            trigger.innerHTML = `<span class="truncate max-w-[120px] text-slate-700">${text}</span>`;
+        } else {
+            trigger.innerHTML = `<span class="text-slate-400">-- เปลี่ยนขนาดกลุ่ม --</span>`;
+        }
+        document.getElementById('dd_bulk_layout').classList.remove('open');
+    }
+
+    window.addEventListener('click', function(e) {
+        if (!e.target.closest('.custom-select')) {
+            document.querySelectorAll('.custom-select.open').forEach(el => el.classList.remove('open'));
+        }
+        document.getElementById('widgetContextMenu').classList.add('hidden');
+    });
+
+    function getTextColorForBackground(hexColor) {
+        if(!hexColor) return '#ffffff';
+        let hex = hexColor.replace('#', '');
+        if(hex.length === 3) hex = hex.split('').map(char => char + char).join('');
+        const r = parseInt(hex.substr(0, 2), 16); const g = parseInt(hex.substr(2, 2), 16); const b = parseInt(hex.substr(4, 2), 16);
+        const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        return (yiq >= 128) ? '#0f172a' : '#ffffff'; 
+    }
+
+    function updateRankingLimit(colIndex, val) {
+       rankingLimits[colIndex] = val;
+       if(!document.getElementById('cmsSplitEditorZone').classList.contains('hidden')) {
+           renderLiveCanvasDashboardSpace(); 
+       } else {
+           renderWidgetsViewOnlyContainer(currentAppConfig.mapping);
+       }
+    }
+
+    function setPreviewMode(mode, btn) {
+        window.currentPreviewDevice = mode;
+        
+        document.querySelectorAll('.vp-btn').forEach(b => {
+            b.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600');
+            b.classList.add('text-slate-400');
+            b.classList.replace('hover:bg-slate-100', 'hover:bg-white/50');
+            const indicator = b.querySelector('.vp-indicator');
+            if(indicator) { indicator.classList.replace('opacity-100', 'opacity-0'); }
+        });
+        
+        btn.classList.remove('text-slate-400', 'hover:bg-white/50');
+        btn.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
+        const activeIndicator = btn.querySelector('.vp-indicator');
+        if(activeIndicator) activeIndicator.classList.replace('opacity-0', 'opacity-100');
+
+        const wrapper = document.getElementById('previewDeviceWrapper');
+        wrapper.className = 'transition-all duration-500 mx-auto w-full relative'; 
+        
+        if (mode === 'desktop') wrapper.classList.add('preview-desktop');
+        else if (mode === 'tablet') wrapper.classList.add('preview-tablet');
+        else if (mode === 'mobile') wrapper.classList.add('preview-mobile');
+
+        document.getElementById('ctxDeviceBadge').innerText = mode.charAt(0).toUpperCase() + mode.slice(1);
+
+        renderLiveCanvasDashboardSpace(); 
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 310);
+    }
+
+    function openProjectBuilder() {
+        document.getElementById('myProjectsZone').classList.add('hidden');
+        document.getElementById('cmsSplitEditorZone').classList.remove('hidden');
+        document.getElementById('sbLogoIcon').innerHTML = svgs.layerPlus;
+        document.getElementById('sbSaveBtnIcon').innerHTML = svgs.disk;
+        document.getElementById('sbBackBtnIcon').innerHTML = svgs.leftArrow;
+    }
+
+    function closeProjectBuilder() {
+        document.getElementById('cmsSplitEditorZone').classList.add('hidden');
+        document.getElementById('myProjectsZone').classList.remove('hidden');
+        editingProjectId = null;
+        liveWidgetMapping = [];
+        document.getElementById('dashTitleInput').value = '';
+        document.getElementById('dashLogoInput').value = '';
+        document.getElementById('sheetIdInput').value = '';
+        document.getElementById('sheet1Input').value = '';
+        document.getElementById('sheet2Input').value = '';
+        document.getElementById('sbWidgetListContainer').innerHTML = `<div class="text-center p-8 text-xs font-bold text-slate-400">กรุณากรอกข้อมูลและกดดึงโครงสร้างข้อมูลด้านบน</div>`;
+        document.getElementById('liveCanvasGridContainer').innerHTML = '';
+    }
+
+    function logout() {
+        localStorage.removeItem('user_email'); localStorage.removeItem('user_name');
+        window.location.href = "index.html"; // ไปที่หน้า Login
+    }
+
+    // 🟢 อัปเดต Fetch API
+    async function fetchMyProjects() {
+        showLoading('กำลังเรียกดูข้อมูลสถิติคลังองค์กร...');
+        try {
+            const json = await apiCall({ action: 'getMyProjects', userEmail: currentUserEmail });
+            hideLoading();
+            if (json.status === 'success') renderProjectDashboardGrid(json.data); 
+        } catch(e) { hideLoading(); Swal.fire('Error', 'ไม่สามารถเชื่อมต่อฐานข้อมูล', 'error'); }
+    }
+
+    function renderProjectDashboardGrid(items) {
+        const container = document.getElementById('projectList');
+        if(items.length === 0) return container.innerHTML = `<div class="col-span-3 text-center p-12 bg-white rounded-3xl border border-slate-200 font-bold text-slate-400">คุณยังไม่มีแผงสถิติรายงานผลใดๆ ในระบบ</div>`;
+        
+        // 🟢 เปลี่ยนลิงก์แชร์เป็นระบบ GitHub Pages
+        const baseUrl = window.location.href.split('?')[0]; 
+        
+        container.innerHTML = items.map(p => `
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition group relative">
+             <button onclick="editExistingDashboard('${p.id}')" class="absolute top-4 right-12 w-8 h-8 bg-sky-50 text-sky-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition hover:bg-sky-600 hover:text-white">${svgs.pencil}</button>
+             <button onclick="deleteDashboardState('${p.id}')" class="absolute top-4 right-4 w-8 h-8 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition hover:bg-rose-500 hover:text-white">${svgs.trash}</button>
+             <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4"><span class="w-5 h-5 flex items-center justify-center">${svgs.pieAlt}</span></div>
+             <h3 class="font-black text-slate-800 text-base line-clamp-1 mb-1 pr-14">${p.name}</h3>
+             <p class="text-[11px] text-slate-400 font-bold mb-4">แก้ไขล่าสุด: ${p.date.substring(0,10)}</p>
+             <div class="flex gap-2">
+                <a href="${baseUrl}?id=${p.id}" target="_blank" class="flex-1 text-center bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">เปิดดู</a>
+                <button onclick="navigator.clipboard.writeText('${baseUrl}?id=${p.id}');Swal.fire({icon:'success',title:'คัดลอกลิงก์สำเร็จ',timer:1000,showConfirmButton:false});" class="flex-1 text-center bg-slate-100 text-slate-600 py-2 rounded-xl text-xs font-bold hover:bg-slate-200">คัดลอกลิงก์</button>
+             </div>
+          </div>`).join('');
+    }
+
+    async function editExistingDashboard(id) {
+        openProjectBuilder();
+        showLoading('กำลังดึงโครงสร้างแผนงานเดิม...');
+        try {
+            const json = await apiCall({ action: 'loadProject', projectId: id });
+            editingProjectId = id; const cfg = json.config;
+            document.getElementById('dashTitleInput').value = json.projectName;
+            document.getElementById('dashLogoInput').value = json.logoUrl || '';
+            document.getElementById('sheetIdInput').value = cfg.spreadsheetId;
+            document.getElementById('sheet1Input').value = cfg.sheet1Name;
+            document.getElementById('sheet2Input').value = cfg.sheet2Name || '';
+            await fetchHeaders(cfg.mapping); 
+            hideLoading();
+        } catch(e) { hideLoading(); Swal.fire('Error', 'ไม่สามารถดึงข้อมูลได้', 'error'); }
+    }
+
+    function deleteDashboardState(id) {
+        Swal.fire({ title: 'ยืนยันการลบโครงข่ายรายงานนี้?', text: "ลิงก์แชร์ทั้งหมดจะถูกยกเลิกทันที ข้อมูลบนสเปรดชีตปลอดภัย 100%", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' }).then(async (res) => {
+            if (res.isConfirmed) {
+                showLoading('กำลังถอนการตั้งค่า...');
+                try {
+                    const json = await apiCall({ action: 'deleteProject', projectId: id, userEmail: currentUserEmail });
+                    hideLoading(); 
+                    if(json.status === 'success') {
+                        fetchMyProjects(); 
+                        Swal.fire({icon: 'success', title: 'ลบรายงานสำเร็จ', timer: 1500, showConfirmButton: false});
+                    } else {
+                        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถลบรายงานได้', 'error');
+                    }
+                } catch(e) { hideLoading(); Swal.fire('ข้อผิดพลาดเครือข่าย', 'กรุณาตรวจสอบการเชื่อมต่อ', 'error'); }
+            }
+        });
+    }
+
+    async function fetchHeaders(savedMapping = null) {
+       currentAppConfig.spreadsheetId = document.getElementById('sheetIdInput').value.trim();
+       currentAppConfig.sheet1Name = document.getElementById('sheet1Input').value.trim();
+       currentAppConfig.sheet2Name = document.getElementById('sheet2Input').value.trim();
+       if(!currentAppConfig.spreadsheetId || !currentAppConfig.sheet1Name) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุ Spreadsheet ID และชื่อแผ่นงานหลัก', 'warning');
+       showLoading('กำลังผสานช่องข้อมูลเรียงแบบคู่ขนาน...');
+
+       try {
+          const json = await apiCall({ action: 'getHeaders', ...currentAppConfig });
+          if (json.status === 'success') {
+             fetchedHeaders1 = json.headers1 || []; fetchedHeaders2 = json.headers2 || [];
+             
+             const dbData = await apiCall({ action: 'getSheetData', ...currentAppConfig });
+             if(dbData.status === 'success') { 
+                 rawData1 = dbData.data1.slice(1); 
+                 rawData2 = dbData.data2 ? dbData.data2.slice(1) : []; 
+             }
+
+             if(savedMapping) {
+                 liveWidgetMapping = savedMapping;
+                 liveWidgetMapping.forEach(m => { 
+                     m.isOriginal = getIsOriginal(m); 
+                     if(typeof m.layout === 'number') m.layout = { d: m.layout, t: m.layout, m: m.layout };
+                 });
+             } else {
+                 liveWidgetMapping = [];
+                 fetchedHeaders1.forEach((h, i) => {
+                     liveWidgetMapping.push({ id: 'w_s1_' + i, source: 'sheet1', index: i, title: h, alias: h, type: 'ignore', layout: {d: 12, t: 12, m: 12}, note: '', baseCalc: 'auto', isOriginal: true, style: null });
+                 });
+                 fetchedHeaders2.forEach((h, i) => {
+                     liveWidgetMapping.push({ id: 'w_s2_' + i, source: 'sheet2', index: i, title: h, alias: h, type: 'ignore', layout: {d: 12, t: 12, m: 12}, note: '', baseCalc: 'auto', isOriginal: true, style: null });
+                 });
+             }
+             renderSidebarControlElements();
+             renderLiveCanvasDashboardSpace();
+             buildGlobalFilterUI(liveWidgetMapping);
+          } else {
+              Swal.fire('ข้อผิดพลาดชีท', json.message, 'error');
+          }
+       } catch (err) { Swal.fire('ล้มเหลว', 'ไม่สามารถเข้าถึงที่อยู่ลิงก์ Google Sheets ปลายทางได้', 'error'); } finally { hideLoading(); }
+    }
+
+    async function refreshDataSilently() {
+        if(!currentAppConfig.spreadsheetId || !currentAppConfig.sheet1Name) return;
+        showLoading('กำลังซิงค์ข้อมูลใหม่ล่าสุดจาก Google Sheets...');
+        try {
+            const dbData = await apiCall({ action: 'getSheetData', ...currentAppConfig });
+            if(dbData.status === 'success') {
+                rawData1 = dbData.data1.slice(1);
+                if(dbData.data2 && dbData.data2.length > 0) rawData2 = dbData.data2.slice(1);
+                renderLiveCanvasDashboardSpace();
+                Swal.fire({icon: 'success', title: 'อัปเดตข้อมูลสำเร็จ', timer: 1500, showConfirmButton: false});
+            } else { Swal.fire('เกิดข้อผิดพลาด', 'ดึงข้อมูลไม่สำเร็จ', 'error'); }
+        } catch(e) { Swal.fire('ข้อผิดพลาดเครือข่าย', 'ไม่สามารถเชื่อมต่อเพื่ออัปเดตข้อมูลได้', 'error'); } finally { hideLoading(); }
+    }
+
+    function toggleBulkSelectAllSidebarRows(isChecked) {
+        document.querySelectorAll('.sidebar-row-chk').forEach(chk => chk.checked = isChecked);
+    }
+
+    function executeSidebarBulkActionState() {
+        const typeVal = document.getElementById('bulkTypeSelectHidden').value;
+        const layoutVal = document.getElementById('bulkLayoutSelectHidden').value;
+        let changeCount = 0;
+
+        document.querySelectorAll('.sidebar-widget-item-card').forEach(card => {
+            const chk = card.querySelector('.sidebar-row-chk');
+            if(chk && chk.checked) {
+                const wId = card.getAttribute('data-sidebar-widget-id');
+                const match = liveWidgetMapping.find(m => m.id === wId);
+                if(match) {
+                    changeCount++;
+                    if(typeVal) {
+                        match.type = typeVal;
+                        let newL = 12;
+                        if(typeVal === 'kpi_total' || typeVal === 'kpi_percent') newL = 3;
+                        else if(typeVal === 'average' || typeVal === 'kpi_compare') newL = 6;
+                        if (typeof match.layout === 'number') match.layout = {d: match.layout, t: match.layout, m: match.layout};
+                        
+                        match.layout = { d: newL, t: (newL===3?6:newL), m: 12 }; 
+                    }
+                    if(layoutVal) {
+                        let parsedVal = parseInt(layoutVal);
+                        if (typeof match.layout === 'number') match.layout = {d: match.layout, t: match.layout, m: match.layout};
+                        if (!match.layout) match.layout = {d: 12, t: 12, m: 12};
+                        
+                        if(window.currentPreviewDevice === 'desktop') {
+                            match.layout.d = parsedVal;
+                            match.layout.t = parsedVal; 
+                            match.layout.m = parsedVal;
+                        } else if(window.currentPreviewDevice === 'tablet') {
+                            match.layout.t = parsedVal;
+                            match.layout.m = parsedVal;
+                        } else if(window.currentPreviewDevice === 'mobile') {
+                            match.layout.m = parsedVal;
+                        }
+                    }
+                }
+            }
+        });
+
+        if(changeCount === 0) return Swal.fire('แจ้งเตือน', 'กรุณาติ๊กถูกเลือกอย่างน้อย 1 รายการเพื่อทำ Bulk Action ครับ', 'warning');
+        
+        selectBulkType('', '-- เปลี่ยนประเภทกลุ่ม --', null);
+        selectBulkLayout('', '-- เปลี่ยนขนาดกลุ่ม --', null);
+        document.getElementById('selectAllSidebarChks').checked = false;
+        
+        renderSidebarControlElements();
+        renderLiveCanvasDashboardSpace();
+        Swal.fire({ icon: 'success', title: `ปรับแต่งโครงสร้างรวมทั้งหมด ${changeCount} รายการสำเร็จ`, timer: 1200, showConfirmButton: false });
+    }
+    
+    window.updateWidgetBaseCalc = function(id, val) {
+        let match = liveWidgetMapping.find(m => m.id === id);
+        if(match) { match.baseCalc = val; renderLiveCanvasDashboardSpace(); }
+    }
+    
+    window.updateCustomWidgetData = function(id, field, value) {
+        let match = liveWidgetMapping.find(m => m.id === id);
+        if(match) {
+            if(!match.customData) match.customData = {};
+            match.customData[field] = value;
+            renderLiveCanvasDashboardSpace();
+        }
+    }
+
+    window.updateCompareLabel = function(id, target, el) {
+        let match = liveWidgetMapping.find(m => m.id === id);
+        if(match) {
+            if(!match.compareLabels) match.compareLabels = {};
+            match.compareLabels[target] = el.innerText.trim();
+        }
+    }
+    
+    window.preventEnterNewline = function(e) {
+        if(e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+    }
+    
+    window.updateWidgetCompareTarget = function(id, val) {
+        let match = liveWidgetMapping.find(m => m.id === id);
+        if(match) { match.compareTargetIndex = parseInt(val); renderLiveCanvasDashboardSpace(); }
+    }
+
+    function renderSidebarControlElements() {
+        const container = document.getElementById('sbWidgetListContainer');
+        container.innerHTML = "";
+        
+        let titleNode = document.getElementById('dashTitleInput').value.trim() || "แผงจำลองภาพรายงานผลสถิติ";
+        document.getElementById('canvasRenderTitle').innerText = titleNode;
+
+        if(liveWidgetMapping.length === 0) return;
+
+        liveWidgetMapping.forEach((map) => {
+            if(map.type === 'spacer') {
+                container.innerHTML += `
+                <div class="bg-indigo-50/70 border border-dashed border-indigo-200 p-3 rounded-xl flex items-center justify-between sidebar-widget-item-card" data-sidebar-widget-id="${map.id}">
+                    <div class="flex items-center gap-2 flex-1">
+                        <span class="text-indigo-400">${svgs.info}</span>
+                        <input type="text" value="${map.customText || ''}" onchange="updateWidgetSpacerCustomText('${map.id}', this.value)" placeholder="ระบุข้อความ / หัวข้อย่อยคั่นแถว..." class="bg-transparent text-xs font-black text-indigo-900 outline-none w-full border-b border-indigo-100 focus:border-indigo-400">
+                    </div>
+                    <button onclick="deleteSidebarWidgetState('${map.id}')" class="text-rose-400 hover:text-rose-600 p-1 ml-2">${svgs.trash}</button>
+                </div>`;
+                return;
+            }
+            if(map.type === 'table_wrapper_combined') return;
+
+            const bgClass = map.source === 'sheet1' ? 'border-l-4 border-l-indigo-600' : (map.source === 'sheet2' ? 'border-l-4 border-l-cyan-500' : 'border-l-4 border-l-emerald-500');
+            const themeBadge = map.source === 'sheet1' ? 'bg-indigo-50 text-indigo-700' : (map.source === 'sheet2' ? 'bg-cyan-50 text-cyan-700' : 'bg-emerald-50 text-emerald-700');
+            const sourceText = map.source === 'sheet1' ? 'Sheet 1' : (map.source === 'sheet2' ? 'Sheet 2' : 'Custom');
+            
+            const currentTypeObj = widgetTypes.find(t => t.val === map.type) || widgetTypes[0];
+            let customDropdownHtml = `
+                <div class="custom-select-wrapper">
+                    <div class="custom-select" id="dd_${map.id}">
+                        <div class="custom-select__trigger" onclick="toggleCustomDropdown('dd_${map.id}', event)">
+                            <div class="flex items-center gap-1.5 selected-content">
+                                <span class="${currentTypeObj.color} w-3.5 h-3.5 flex items-center justify-center">${currentTypeObj.icon}</span>
+                                <span class="truncate max-w-[120px]">${currentTypeObj.text}</span>
+                            </div>
+                            <span class="text-slate-400">${svgs.angleDown}</span>
+                        </div>
+                        <div class="custom-options">
+                            ${widgetTypes.map(t => `
+                                <div class="custom-option" onclick="updateWidgetFieldType('${map.id}', '${t.val}', event)">
+                                    <span class="${t.color} w-3.5 h-3.5 flex items-center justify-center">${t.icon}</span>
+                                    <span>${t.text}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            let extraOptionsHtml = '';
+            
+            if (['kpi_percent', 'kpi_compare', 'single_choice', 'multi_choice', 'ranking'].includes(map.type)) {
+                let s1Name = document.getElementById('sheet1Input').value || 'Sheet 1';
+                let s2Name = document.getElementById('sheet2Input').value || 'Sheet 2';
+                extraOptionsHtml += `
+                    <div class="mt-1.5">
+                        <select onchange="updateWidgetBaseCalc('${map.id}', this.value)" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 outline-none focus:border-indigo-500 transition shadow-sm">
+                            <option value="auto" ${!map.baseCalc || map.baseCalc==='auto' ? 'selected':''}>ฐาน % อัตโนมัติ (จำนวนข้อมูลตามจริง)</option>
+                            <option value="sheet1" ${map.baseCalc==='sheet1' ? 'selected':''}>อิงผลรวมทั้งหมด ${s1Name} (Sheet 1)</option>
+                            <option value="sheet2" ${map.baseCalc==='sheet2' ? 'selected':''}>อิงผลรวมทั้งหมด ${s2Name} (Sheet 2)</option>
+                        </select>
+                    </div>
+                `;
+            }
+
+            if (map.type === 'custom_box') {
+                 extraOptionsHtml += `
+                    <div class="mt-1.5 p-2 bg-emerald-50 rounded-lg border border-emerald-100 space-y-1.5">
+                        <input type="text" value="${map.customData?.title || ''}" oninput="updateCustomWidgetData('${map.id}', 'title', this.value)" placeholder="ชื่อหัวข้อหลัก (Title)" class="w-full px-2 py-1 bg-white border border-emerald-200 rounded text-[10px] font-bold text-slate-700 outline-none focus:border-emerald-500">
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <input type="text" value="${map.customData?.value || ''}" oninput="updateCustomWidgetData('${map.id}', 'value', this.value)" placeholder="ตัวเลข / ค่า (Value)" class="w-full px-2 py-1 bg-white border border-emerald-200 rounded text-[10px] font-bold text-slate-700 outline-none focus:border-emerald-500">
+                            <input type="text" value="${map.customData?.unit || ''}" oninput="updateCustomWidgetData('${map.id}', 'unit', this.value)" placeholder="หน่วย (Unit)" class="w-full px-2 py-1 bg-white border border-emerald-200 rounded text-[10px] font-bold text-slate-700 outline-none focus:border-emerald-500">
+                        </div>
+                        <input type="text" value="${map.customData?.subtext || ''}" oninput="updateCustomWidgetData('${map.id}', 'subtext', this.value)" placeholder="ข้อความรองด้านล่าง (Subtext)" class="w-full px-2 py-1 bg-white border border-emerald-200 rounded text-[10px] font-bold text-slate-700 outline-none focus:border-emerald-500">
+                    </div>
+                `;
+            }
+
+            let elementItemHtml = `
+                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2 sidebar-widget-item-card ${bgClass}" data-sidebar-widget-id="${map.id}">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                             <input type="checkbox" class="sidebar-row-chk accent-indigo-600 rounded w-3.5 h-3.5 cursor-pointer">
+                             <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${themeBadge}">${sourceText}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <label class="text-[10px] font-bold text-slate-400 flex items-center gap-1 cursor-pointer">
+                                <input type="checkbox" class="accent-indigo-600 is-filter-chk" data-id="${map.id}" onchange="toggleFilterTargetState('${map.id}', this.checked)" ${map.isFilter?'checked':''}> ตัวกรอง
+                            </label>
+                            <button onclick="cloneSidebarWidgetState('${map.id}')" class="text-slate-300 hover:text-indigo-600 p-0.5">${svgs.add}</button>
+                            <button onclick="deleteSidebarWidgetState('${map.id}')" class="text-slate-300 hover:text-rose-600 p-0.5">${svgs.trash}</button>
+                        </div>
+                    </div>
+                    ${map.type !== 'custom_box' ? `<input type="text" value="${map.alias || map.title}" onblur="updateWidgetAliasName('${map.id}', this.value)" class="w-full px-2 py-1 bg-slate-50 border border-slate-100 rounded font-bold text-xs text-slate-700 focus:bg-white outline-none" title="เปลี่ยนหัวข้อเฉพาะหน้าแสดงผล">` : ''}
+                    <div class="grid grid-cols-2 gap-1.5 text-xs relative">
+                        ${map.type !== 'custom_box' ? customDropdownHtml : '<div class="text-[10px] font-bold text-emerald-600 flex items-center justify-center bg-emerald-50 px-2 rounded-lg border border-emerald-100 shadow-sm"><span class="w-3.5 h-3.5 mr-1 flex items-center justify-center">'+svgs.users+'</span> ข้อมูลกำหนดเอง</div>'}
+                        <input type="text" value="${map.note || ''}" onblur="updateWidgetNoteText('${map.id}', this.value)" placeholder="ระบุ Note / ลิงก์ปุ่ม (ถ้ามี)" class="p-2 border border-slate-200 bg-white rounded-lg outline-none text-[11px]">
+                    </div>
+                    ${extraOptionsHtml}
+                </div>`;
+            container.insertAdjacentHTML('beforeend', elementItemHtml);
+        });
+    }
+
+    function updateWidgetFieldType(id, val, event) {
+        if(event) event.stopPropagation();
+        const match = liveWidgetMapping.find(m => m.id === id);
+        if(!match) return; match.type = val;
+        
+        let newL = 12;
+        if(val === 'kpi_total' || val === 'kpi_percent') newL = 3;
+        else if(val === 'average' || val === 'kpi_compare') newL = 6;
+        else newL = 12;
+
+        if (typeof match.layout === 'number') match.layout = {d: match.layout, t: match.layout, m: match.layout};
+        match.layout = { d: newL, t: (newL===3?6:newL), m: 12 }; 
+        
+        document.querySelectorAll('.custom-select.open').forEach(el => el.classList.remove('open'));
+        const ddTrigger = document.querySelector(`#dd_${id} .selected-content`);
+        const typeObj = widgetTypes.find(t => t.val === val);
+        if (ddTrigger && typeObj) {
+            ddTrigger.innerHTML = `<span class="${typeObj.color} w-3.5 h-3.5 flex items-center justify-center">${typeObj.icon}</span><span class="truncate max-w-[120px]">${typeObj.text}</span>`;
+        }
+
+        renderSidebarControlElements(); 
+        renderLiveCanvasDashboardSpace(); 
+    }
+    
+    function updateWidgetAliasName(id, val) { if(val.trim()){ liveWidgetMapping.find(m => m.id === id).alias = val.trim(); renderLiveCanvasDashboardSpace(); } }
+    function updateWidgetNoteText(id, val) { liveWidgetMapping.find(m => m.id === id).note = val.trim(); renderLiveCanvasDashboardSpace(); }
+    function updateWidgetSpacerCustomText(id, val) { liveWidgetMapping.find(m => m.id === id).customText = val.trim(); renderLiveCanvasDashboardSpace(); }
+    
+    function deleteSidebarWidgetState(id) { 
+        const match = liveWidgetMapping.find(m => m.id === id);
+        if (match) {
+            if (match.isOriginal) {
+                match.type = 'ignore';
+                Swal.fire({
+                    icon: 'info', title: 'ซ่อนการแสดงผลแทนการลบ', 
+                    text: 'ข้อมูลชุดนี้เป็นโครงสร้างพื้นฐาน ไม่สามารถลบออกจากระบบได้ แต่เราได้ปรับค่าเป็น "ไม่นำมาแสดงผล" ให้แล้วครับ', 
+                    timer: 2500, showConfirmButton: false
+                });
+                
+                const ddTrigger = document.querySelector(`#dd_${id} .selected-content`);
+                const ignoreObj = widgetTypes.find(t => t.val === 'ignore');
+                if (ddTrigger && ignoreObj) {
+                    ddTrigger.innerHTML = `<span class="${ignoreObj.color} w-3.5 h-3.5 flex items-center justify-center">${ignoreObj.icon}</span><span class="truncate max-w-[120px]">${ignoreObj.text}</span>`;
+                }
+                renderSidebarControlElements();
+
+            } else {
+                liveWidgetMapping = liveWidgetMapping.filter(m => m.id !== id);
+                renderSidebarControlElements(); 
+            }
+            renderLiveCanvasDashboardSpace();
+        }
+    }
+    
+    function toggleFilterTargetState(id, isChecked) {
+        liveWidgetMapping.forEach(m => m.isFilter = false);
+        if(isChecked) {
+            const match = liveWidgetMapping.find(m => m.id === id);
+            if(match) match.isFilter = true;
+        }
+        
+        document.querySelectorAll('.is-filter-chk').forEach(chk => {
+            if (chk.getAttribute('data-id') !== id) chk.checked = false;
+        });
+
+        buildGlobalFilterUI(liveWidgetMapping); 
+        renderLiveCanvasDashboardSpace();
+    }
+    
+    function cloneSidebarWidgetState(id) {
+        const match = liveWidgetMapping.find(m => m.id === id);
+        let idx = liveWidgetMapping.findIndex(m => m.id === id);
+        if(match && idx !== -1) {
+            let clonedLayout = {d: 12, t: 12, m: 12};
+            if(match.layout && typeof match.layout === 'object') clonedLayout = {...match.layout};
+            else if(typeof match.layout === 'number') clonedLayout = {d:match.layout, t:match.layout, m:match.layout};
+
+            let clonedCustomData = match.customData ? {...match.customData} : null;
+            let clonedCompareLabels = match.compareLabels ? {...match.compareLabels} : null;
+
+            liveWidgetMapping.splice(idx + 1, 0, { ...match, id: 'w_cl_' + Math.random().toString(36).substr(2,4), type: match.type === 'custom_box' ? 'custom_box' : 'ignore', layout: clonedLayout, baseCalc: match.baseCalc || 'auto', isFilter: false, badgeRules: null, isOriginal: false, style: null, customData: clonedCustomData, compareLabels: clonedCompareLabels });
+        }
+        renderSidebarControlElements(); renderLiveCanvasDashboardSpace();
+    }
+
+    function openWidgetColorConfig() {
+        if(!activeWidgetContextEl) return;
+        const wid = activeWidgetContextEl.getAttribute('data-widget-id');
+        const match = liveWidgetMapping.find(m => m.id === wid);
+        if(!match) return;
+
+        document.getElementById('widgetContextMenu').classList.add('hidden');
+
+        let defBg = '#ffffff', defText = '#0a2240', defSub = '#64748b', defAccent = '#4f46e5';
+        if (match.type === 'kpi_percent') { defBg = '#0a2240'; defText = '#ffffff'; defSub = '#bfdbfe'; defAccent = '#10b981'; }
+        
+        let curBg = (match.style && match.style.bgColor) ? match.style.bgColor : defBg;
+        let curText = (match.style && match.style.textColor) ? match.style.textColor : defText;
+        let curSub = (match.style && match.style.subTextColor) ? match.style.subTextColor : defSub;
+        let curAccent = (match.style && match.style.accentColor) ? match.style.accentColor : defAccent;
+
+        Swal.fire({
+            title: `<div class="flex items-center gap-2 justify-center text-lg"><span class="text-indigo-500">${svgs.paintBrush}</span> ปรับแต่งสีการ์ดครบวงจร</div>`,
+            html: `
+                <div class="space-y-4 text-left mt-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">สีพื้นหลัง (Background)</label>
+                        <input type="color" id="cfgBg" value="${curBg}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">สีอักษรหลัก (Primary Text / Number)</label>
+                        <input type="color" id="cfgText" value="${curText}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">สีอักษรรอง (Subtext / Header)</label>
+                        <input type="color" id="cfgSub" value="${curSub}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-indigo-500 mb-1">สีไฮไลต์ (Accent / Progress / Badge)</label>
+                        <input type="color" id="cfgAccent" value="${curAccent}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm">
+                    </div>
+                    <button onclick="document.getElementById('cfgBg').value='${defBg}'; document.getElementById('cfgText').value='${defText}'; document.getElementById('cfgSub').value='${defSub}'; document.getElementById('cfgAccent').value='${defAccent}';" class="text-xs text-indigo-500 font-bold hover:underline mt-2 flex items-center gap-1"><span class="w-3.5 h-3.5">${svgs.refresh}</span> คืนค่าสีเริ่มต้น</button>
+                </div>
+            `,
+            showCancelButton: true, confirmButtonText: 'บันทึกสี', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#4f46e5'
+        }).then((res) => {
+            if(res.isConfirmed) {
+                match.style = {
+                    bgColor: document.getElementById('cfgBg').value,
+                    textColor: document.getElementById('cfgText').value,
+                    subTextColor: document.getElementById('cfgSub').value,
+                    accentColor: document.getElementById('cfgAccent').value
+                };
+                renderLiveCanvasDashboardSpace();
+            }
+        });
+    }
+
+    window.openRenameWidgetModal = function() {
+        if(!activeWidgetContextEl) return;
+        const wid = activeWidgetContextEl.getAttribute('data-widget-id');
+        
+        let match = liveWidgetMapping.find(m => m.id === wid);
+        if(!match && wid === 'table_wrapper_combined') {
+            match = { id: 'table_wrapper_combined', type: 'table_wrapper_combined', layout: {d: 12, t: 12, m: 12}, isFilter: false, customTitle: '' };
+            liveWidgetMapping.push(match);
+        }
+        if(!match) return;
+
+        document.getElementById('widgetContextMenu').classList.add('hidden');
+
+        let currentTitle = match.customTitle || match.alias || match.title || '';
+        if (wid === 'table_wrapper_combined' && !currentTitle) currentTitle = 'คลังตารางสรุปวิเคราะห์ข้อมูลรวมคู่ขนาน';
+        else if (match.type === 'spacer' && !currentTitle) currentTitle = match.customText;
+
+        Swal.fire({
+            title: '<div class="text-sm font-black">เปลี่ยนชื่อหัวข้อการ์ด</div>',
+            input: 'text',
+            inputValue: currentTitle,
+            inputAttributes: { class: 'p-3 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-indigo-500' },
+            customClass: { input: 'mx-auto w-[90%]' },
+            showCancelButton: true,
+            confirmButtonText: 'บันทึก',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#4f46e5'
+        }).then((res) => {
+            if(res.isConfirmed) {
+                if (wid === 'table_wrapper_combined') {
+                    match.customTitle = res.value.trim();
+                } else if (match.type === 'spacer') {
+                    match.customText = res.value.trim();
+                } else {
+                    match.alias = res.value.trim();
+                }
+                renderSidebarControlElements();
+                renderLiveCanvasDashboardSpace();
+            }
+        });
+    };
+
+    function renderLiveCanvasDashboardSpace() {
+        const container = document.getElementById('liveCanvasGridContainer');
+        container.innerHTML = "";
+
+        const filterConfig = liveWidgetMapping.find(m => m.isFilter === true);
+        let d1 = [...rawData1], d2 = [...rawData2];
+        if (filterConfig && currentGlobalFilterVal !== "ALL") {
+            if (filterConfig.source === 'sheet1') d1 = rawData1.filter(r => String(r[filterConfig.index]).trim() === currentGlobalFilterVal);
+            else d2 = rawData2.filter(r => String(r[filterConfig.index]).trim() === currentGlobalFilterVal);
+        }
+
+        const tableMaps = liveWidgetMapping.filter(m => m.type === 'table_column');
+        const activeWidgets = liveWidgetMapping.filter(m => m.type !== 'ignore' && m.type !== 'table_column' && !m.isFilter && m.type !== 'table_wrapper_combined');
+
+        activeWidgets.forEach(m => {
+            let data = m.source === 'sheet1' ? d1 : d2;
+            
+            let l = m.layout;
+            if (typeof l === 'number') l = {d: l, t: l, m: l};
+            if (!l) l = {d: 12, t: 12, m: 12};
+            
+            let activeSize = l.d;
+            if (window.currentPreviewDevice === 'tablet') activeSize = l.t;
+            if (window.currentPreviewDevice === 'mobile') activeSize = l.m;
+            let colSpanClass = `col-span-${activeSize}`; 
+
+            let dispHeaderTitle = m.alias || m.title;
+            let innerHtml = '';
+
+            let defBg = m.type === 'kpi_percent' ? '#0a2240' : '#ffffff';
+            let defText = m.type === 'kpi_percent' ? '#ffffff' : '#0a2240';
+            let defSub = m.type === 'kpi_percent' ? '#bfdbfe' : '#64748b'; 
+            let defAccent = m.type === 'kpi_percent' ? '#10b981' : '#4f46e5';
+            
+            let cBg = m.style?.bgColor || defBg;
+            let cText = m.style?.textColor || defText;
+            let cSub = m.style?.subTextColor || defSub;
+            let cAccent = m.style?.accentColor || defAccent;
+
+            let noteHtml = m.note ? `<div class="text-[11px] bg-black/5 px-3 py-2 rounded-xl mt-4 flex items-center gap-1.5 border border-black/5" style="color: ${cSub};"><span style="color: ${cAccent};" class="w-3.5 h-3.5 flex">${svgs.info}</span> ${m.note}</div>` : '';
+            
+            let totalBaseForPct = 0;
+            if (m.baseCalc === 'sheet1') totalBaseForPct = rawData1.length;
+            else if (m.baseCalc === 'sheet2') totalBaseForPct = rawData2.length;
+
+            if (m.type === 'spacer') {
+                container.innerHTML += `<div class="live-widget-box col-span-12 p-4 border border-dashed border-slate-300 rounded-2xl flex items-center gap-2" data-widget-id="${m.id}" style="background-color: ${cBg};"><span class="text-indigo-400">${svgs.arrows}</span> <h3 class="text-base font-black" style="color: ${cText};">${m.customText || 'กล่องข้อความ / คำอธิบายคั่นหน้าสถิติรายงานผล'}</h3></div>`;
+                return;
+            }
+            if (m.type === 'custom_box') {
+                let t = m.customData?.title || 'หัวข้อข้อมูล (Title)';
+                let v = m.customData?.value || '0';
+                let u = m.customData?.unit || '';
+                let st = m.customData?.subtext || '';
+                innerHtml = `<div class="glass-card p-5 h-full flex flex-col justify-between" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="text-xs font-black uppercase mb-3" style="color: ${cSub};">${t}</div><div class="text-3xl font-black" style="color: ${cText};">${v} <span class="text-xs font-bold" style="color: ${cSub};">${u}</span></div>${st ? `<div class="mt-2 text-[10px] font-bold px-2 py-0.5 rounded-lg w-fit" style="color: ${cAccent}; background-color: ${cAccent}1A;">${st}</div>` : ''}</div>${noteHtml}</div>`;
+            }
+            else if (m.type === 'kpi_total') {
+                let count = 0; data.forEach(r => { if(String(r[m.index]).trim()) count++; });
+                innerHtml = `<div class="glass-card p-5 h-full flex flex-col justify-between" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="text-xs font-black uppercase mb-3" style="color: ${cSub};">${dispHeaderTitle}</div><div class="text-3xl font-black" style="color: ${cText};">${count.toLocaleString()} <span class="text-xs font-bold" style="color: ${cSub};">รายการ</span></div></div>${noteHtml}</div>`;
+            }
+            else if (m.type === 'kpi_percent') {
+                let count = 0; data.forEach(r => { if(String(r[m.index]).trim() && String(r[m.index]).trim() !== "-") count++; });
+                let totalBase = totalBaseForPct > 0 ? totalBaseForPct : (m.source === 'sheet2' ? rawData1.length : data.length); 
+                let pct = totalBase > 0 ? ((count * 100) / totalBase).toFixed(1) : "0.0";
+                
+                let baseLabelHtml = totalBaseForPct > 0 ? `<div class="text-[9px] mt-1 text-indigo-300">* อิงยอด ${m.baseCalc === 'sheet1' ? 'Sheet 1' : 'Sheet 2'}</div>` : '';
+                innerHtml = `<div class="glass-card p-5 h-full flex flex-col justify-between" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="text-xs font-black uppercase mb-3 whitespace-normal leading-snug" style="color: ${cSub};">${dispHeaderTitle}</div><div class="text-3xl font-black mb-1" style="color: ${cText};">${count.toLocaleString()} <span class="text-xs" style="color: ${cSub};">คน</span></div><div class="mt-2 w-fit px-2.5 py-1 rounded-lg text-xs font-black border" style="color: ${cAccent}; background-color: ${cAccent}33; border-color: ${cAccent}4D;">คิดเป็น ${pct}%</div>${baseLabelHtml}</div>${m.note ? `<div class="text-[10px] px-3 py-1.5 rounded-xl mt-3 font-medium" style="background-color: ${cText}1A; color: ${cSub};">${m.note}</div>` : ''}</div>`;
+            }
+            else if (m.type === 'kpi_compare') {
+                let primaryData = d1;
+                let secondaryData = d2;
+                
+                let count1 = 0; primaryData.forEach(r => { if(String(r[m.index] || "").trim() && String(r[m.index] || "").trim() !== "-") count1++; });
+                let count2 = 0; secondaryData.forEach(r => { if(String(r[m.index] || "").trim() && String(r[m.index] || "").trim() !== "-") count2++; });
+                
+                let s1Name = document.getElementById('sheet1Input').value || 'Sheet 1';
+                let s2Name = document.getElementById('sheet2Input').value || 'Sheet 2';
+                
+                let label1 = (m.compareLabels && m.compareLabels['primary']) ? m.compareLabels['primary'] : s1Name;
+                let label2 = (m.compareLabels && m.compareLabels['secondary']) ? m.compareLabels['secondary'] : s2Name;
+
+                let baseTotal = totalBaseForPct > 0 ? totalBaseForPct : rawData1.length; 
+                if(baseTotal === 0) baseTotal = 1;
+                
+                let pct1 = ((count1 * 100) / baseTotal).toFixed(1);
+                let pct2 = ((count2 * 100) / baseTotal).toFixed(1);
+                
+                let baseRefText = m.baseCalc === 'sheet2' ? `Sheet 2 (${rawData2.length})` : (m.baseCalc === 'sheet1' ? `Sheet 1 (${rawData1.length})` : `Sheet 1 (${rawData1.length})`);
+
+                innerHtml = `
+                <div class="glass-card p-5 h-full flex flex-col justify-between" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};">
+                    <div>
+                        <div class="text-xs font-black uppercase mb-3 whitespace-normal leading-snug" style="color: ${cSub};">${dispHeaderTitle} (เปรียบเทียบ)</div>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <div class="p-3 rounded-xl" style="background-color: ${cText}0D; border: 1px solid ${cText}1A;">
+                                <div contenteditable="true" onblur="updateCompareLabel('${m.id}', 'primary', this)" onkeydown="preventEnterNewline(event)" class="text-[10px] font-bold mb-1 truncate outline-none hover:bg-black/5 px-1 rounded cursor-text" style="color: ${cSub};" title="คลิกเพื่อแก้ชื่อ">${label1}</div>
+                                <div class="text-xl font-black mb-1" style="color: ${cText}; px-1">${count1.toLocaleString()}</div>
+                                <div class="text-[10px] font-black px-1.5 py-0.5 mx-1 rounded w-fit" style="background-color: #10b98133; color: #10b981;">${pct1}%</div>
+                            </div>
+                            <div class="p-3 rounded-xl" style="background-color: ${cText}0D; border: 1px solid ${cText}1A;">
+                                <div contenteditable="true" onblur="updateCompareLabel('${m.id}', 'secondary', this)" onkeydown="preventEnterNewline(event)" class="text-[10px] font-bold mb-1 truncate outline-none hover:bg-black/5 px-1 rounded cursor-text" style="color: ${cSub};" title="คลิกเพื่อแก้ชื่อ">${label2}</div>
+                                <div class="text-xl font-black mb-1" style="color: ${cText}; px-1">${count2.toLocaleString()}</div>
+                                <div class="text-[10px] font-black px-1.5 py-0.5 mx-1 rounded w-fit" style="background-color: #f43f5e33; color: #f43f5e;">${pct2}%</div>
+                            </div>
+                        </div>
+                        <div class="text-[9px] mt-2 flex items-center gap-1" style="color: ${cSub};">
+                            * อิงผลรวมจาก: ${baseRefText}
+                        </div>
+                    </div>
+                    ${noteHtml}
+                </div>`;
+            }
+            else if (m.type === 'average') {
+                let sum = 0, count = 0; data.forEach(r => { let v = parseFloat(r[m.index]); if(!isNaN(v)){ sum += v; count++; } });
+                let avg = count ? (sum/count).toFixed(2) : "0.00"; let pct = (parseFloat(avg)/5)*100;
+                innerHtml = `<div class="glass-card p-5 flex flex-col justify-between h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="flex justify-between items-start mb-3 gap-2"><span class="text-xs font-black flex-1 leading-snug" style="color: ${cSub};">${dispHeaderTitle}</span><span class="text-lg font-black px-2.5 py-0.5 rounded-xl border shadow-sm" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${avg}</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: ${cText}1A;"><div class="h-full" style="width:${pct}%; background-color: ${cAccent};"></div></div></div>${noteHtml}</div>`;
+            }
+            else if (m.type === 'single_choice' || m.type === 'multi_choice') {
+                let counts = {}; let validTotal = 0;
+                data.forEach(r => { let val = String(r[m.index] || "").trim(); if(val && val !== "-") { validTotal++; if (m.type === 'multi_choice') val.split(/,\s*/).forEach(x => { if(x) counts[x] = (counts[x]||0)+1; }); else counts[val] = (counts[val]||0)+1; } });
+                
+                let denominator = totalBaseForPct > 0 ? totalBaseForPct : validTotal;
+                
+                let sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+                let tbody = sorted.map(it => { let p = denominator > 0 ? ((it[1]*100)/denominator).toFixed(2) : "0.00"; return `<tr class="hover:bg-black/5 transition" style="border-bottom: 1px solid ${cSub}33;"><td class="p-3 font-medium text-xs leading-tight" style="color: ${cText};">${it[0]}</td><td class="p-3 text-right font-black text-xs w-20" style="color: ${cText};">${it[1].toLocaleString()}</td><td class="p-3 text-right font-black text-xs w-20" style="color: ${cAccent}; background-color: ${cAccent}1A;">${p}%</td></tr>`; }).join('');
+                innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><h3 class="font-black text-sm mb-4 flex items-center gap-2"><span style="color: ${cAccent};" class="w-5 h-5 flex">${svgs.pieAlt}</span> <span class="leading-tight flex-1" style="color: ${cText};">${dispHeaderTitle}</span></h3><div class="overflow-x-auto rounded-xl shadow-inner flex-1" style="border: 1px solid ${cSub}33;"><table class="w-full text-xs text-left border-collapse"><thead class="font-bold text-[10px]" style="color: ${cSub}; border-bottom: 1px solid ${cSub}33; background-color: ${cSub}1A;"><tr><th class="p-2.5">รายการ</th><th class="p-2.5 text-right">จำนวน</th><th class="p-2.5 text-right">ร้อยละ</th></tr></thead><tbody style="background-color: transparent;">${tbody || `<tr><td colspan="3" class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีข้อมูล</td></tr>`}</tbody></table></div>${noteHtml}</div>`;
+            }
+            else if (m.type === 'ranking') {
+                let counts = {}; let validTotal = 0;
+                data.forEach(r => { let val = String(r[m.index] || "").trim(); if(val && val !== "-") { validTotal++; counts[val] = (counts[val]||0)+1; } });
+                
+                let denominator = totalBaseForPct > 0 ? totalBaseForPct : validTotal;
+                let limit = rankingLimits[m.index] || 'ALL';
+                let sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]); if(limit !== 'ALL') sorted = sorted.slice(0, parseInt(limit));
+                let tbody = sorted.map((it, idx) => { 
+                    let p = denominator > 0 ? ((it[1]*100)/denominator).toFixed(1) : "0.0"; 
+                    let rankIcon = '';
+                    if (idx === 0) rankIcon = svgs.rank1;
+                    else if (idx === 1) rankIcon = svgs.rank2;
+                    else if (idx === 2) rankIcon = svgs.rank3;
+                    else rankIcon = `<span class="font-black" style="color:${cAccent};">${idx+1}</span>`;
+                    return `<div class="flex items-center justify-between p-2.5 hover:bg-black/5 transition gap-2" style="border-bottom: 1px solid ${cSub}1A;"><div class="w-6 flex justify-center text-sm">${rankIcon}</div><div class="flex-1 min-w-0 font-bold text-xs leading-snug" style="color: ${cText};">${it[0]}</div><div class="text-right flex-shrink-0"><div class="font-black text-xs" style="color: ${cText};">${it[1].toLocaleString()}</div><div class="text-[9px] font-bold" style="color: ${cSub};">${p}%</div></div></div>`; 
+                }).join('');
+                innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div class="flex items-start justify-between mb-4 gap-2"><h3 class="font-black text-sm flex items-center gap-1.5" style="color: ${cText};"><span style="color: ${cAccent};" class="w-5 h-5 flex">${svgs.histogram}</span> <span class="leading-tight">${dispHeaderTitle}</span></h3><select onchange="updateRankingLimit(${m.index}, this.value)" class="text-[10px] font-bold bg-white/50 rounded-lg px-2 py-1 outline-none" style="color: ${cSub}; border: 1px solid ${cSub}33;"><option value="ALL" ${limit==='ALL'?'selected':''}>ทั้งหมด</option><option value="10" ${limit==='10'?'selected':''}>Top 10</option></select></div><div class="rounded-xl p-1.5 flex-1 overflow-y-auto max-h-[300px] shadow-inner print:max-h-none" style="background-color: ${cText}0D; border: 1px solid ${cSub}1A;">${tbody || `<div class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีข้อมูล</div>`}</div>${noteHtml}</div>`;
+            }
+            else if (m.type === 'text_list') {
+                let txts = [...new Set(data.map(r => String(r[m.index]).trim()))].filter(v => v && v!=="-" && v.length > 2);
+                let listHtml = txts.map((t, i) => `<div class="p-3 flex items-start gap-2.5 hover:bg-black/5 break-inside-avoid" style="background-color: transparent; border-bottom: 1px solid ${cSub}1A;"><div class="w-5 h-5 rounded-full flex items-center justify-center font-black flex-shrink-0 text-[9px] mt-0.5 border" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${i+1}</div><div class="text-xs leading-relaxed pt-0.5 whitespace-normal" style="color: ${cText};">${t}</div></div>`).join('');
+                innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><h3 class="font-black text-sm mb-4 flex items-center gap-1.5" style="color: ${cText};"><span style="color: ${cSub};" class="w-5 h-5 flex">${svgs.comment}</span> <span class="leading-tight">${dispHeaderTitle}</span></h3><div class="rounded-xl max-h-[250px] overflow-y-auto print:max-h-none shadow-inner flex-1" style="background-color: ${cText}0D; border: 1px solid ${cSub}1A;">${listHtml || `<div class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีความคิดเห็น</div>`}</div>${noteHtml}</div>`;
+            }
+
+            if(innerHtml) container.innerHTML += `<div class="live-widget-box ${colSpanClass}" data-widget-id="${m.id}">${innerHtml}</div>`;
+       });
+
+       if (tableMaps.length > 0) {
+           let hasComparison = (rawData1.length > 0 && rawData2.length > 0);
+           let keyIndex1 = tableMaps[0].index;
+           let keyIndex2 = fetchedHeaders2.length > 0 ? 0 : 0;
+           
+           let colsCount = tableMaps.length + (hasComparison ? 1 : 0);
+           let tableClass = colsCount > 2 ? 'table-auto-scroll' : '';
+
+           let headersHtml = tableMaps.map(m => {
+               let w = m.tableColWidth || '';
+               let widthStyle = w ? `width:${w};` : '';
+               return `<th oncontextmenu="openColumnConfigModal(event, '${m.id}')" class="p-3 bg-slate-50 border-r border-b border-slate-200 text-xs font-black text-slate-500 cursor-context-menu hover:bg-slate-100 transition draggable-th relative align-middle" data-table-col-id="${m.id}" style="${widthStyle}">
+                          <div class="flex items-center gap-1.5 pointer-events-none"><span class="w-4 h-4 flex">${svgs.arrows}</span> <span class="line-clamp-2">${m.alias || m.title}</span></div>
+                       </th>`;
+           }).join('');
+           
+           if (hasComparison) {
+               let tableMapInfo = liveWidgetMapping.find(m => m.id === 'table_wrapper_combined');
+               let w = (tableMapInfo && tableMapInfo.statusColWidth) ? tableMapInfo.statusColWidth : '120px';
+               let widthStyle = w ? `width:${w};` : '';
+               headersHtml += `<th class="p-3 bg-slate-50 border-r border-b border-slate-200 text-xs font-black text-center text-slate-500 align-middle" style="${widthStyle}">สถานะเข้างาน</th>`;
+           }
+
+           let rowsHtml = d1.map(r => {
+               let idKey = String(r[keyIndex1] || "").trim();
+               let isFound = false;
+               if (hasComparison) isFound = rawData2.some(cr => String(cr[keyIndex2] || "").trim() === idKey);
+               let currentStatus = isFound ? 'attended' : 'noshow';
+
+               let tds = tableMaps.map(m => {
+                   let val = m.source === 'sheet1' ? String(r[m.index] || "").trim() : '';
+                   
+                   if(m.source === 'sheet2' && hasComparison) {
+                       let foundRow = rawData2.find(cr => String(cr[keyIndex2] || "").trim() === idKey);
+                       if(foundRow) val = String(foundRow[m.index] || "").trim();
+                   }
+
+                   if(m.badgeRules && m.badgeRules.length > 0) {
+                       let rule = m.badgeRules.find(rl => rl.val === val);
+                       if(rule) {
+                           let fontColor = getTextColorForBackground(rule.color);
+                           val = `<span class="px-3 py-1 rounded-full text-[11px] font-black inline-block shadow-sm animate-fade-in" style="background-color:${rule.color}; color:${fontColor};">${val}</span>`;
+                       }
+                   }
+                   if (val.startsWith('http')) return `<td class="p-3 text-xs"><a href="${val}" target="_blank" class="bg-indigo-50 stroke-none text-indigo-600 px-2 py-1 rounded-lg text-[10px] font-black hover:bg-indigo-600 hover:text-white transition inline-flex items-center gap-1"><span class="w-3 h-3 flex">${svgs.link}</span> ลิงก์</a></td>`;
+                   return `<td class="p-3 text-xs font-medium text-slate-600 leading-relaxed">${val}</td>`;
+               }).join('');
+
+               if (hasComparison) {
+                   let badge = isFound 
+                       ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 w-fit mx-auto"><span class="w-3.5 h-3.5 flex">${svgs.check}</span> เข้าร่วม</span>`
+                       : `<span class="bg-rose-50 text-rose-700 border border-rose-100 px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 w-fit mx-auto"><span class="w-3.5 h-3.5 flex">${svgs.crossCircle}</span> ไม่มางาน</span>`;
+                   tds += `<td class="p-3 text-center">${badge}</td>`;
+               }
+               return `<tr class="canvas-tablerow border-b border-slate-100 text-xs" data-row-status="${currentStatus}">${tds}</tr>`;
+           }).join('');
+
+           let tableMapInfo = liveWidgetMapping.find(m => m.id === 'table_wrapper_combined');
+           let displayTableTitle = tableMapInfo && tableMapInfo.customTitle ? tableMapInfo.customTitle : 'คลังตารางสรุปวิเคราะห์ข้อมูลรวมคู่ขนาน';
+           
+           let tL = tableMapInfo && tableMapInfo.layout ? tableMapInfo.layout : {d:12, t:12, m:12};
+           if (typeof tL === 'number') tL = {d:tL, t:tL, m:tL};
+           let activeTSize = tL.d;
+           if (window.currentPreviewDevice === 'tablet') activeTSize = tL.t;
+           if (window.currentPreviewDevice === 'mobile') activeTSize = tL.m;
+           let tableColSpanClass = `col-span-${activeTSize}`;
+
+           let tableWrapperCardHtml = `
+             <div class="live-widget-box ${tableColSpanClass} glass-card p-6 flex flex-col" data-widget-id="table_wrapper_combined">
+                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 gap-4 mb-4 pointer-events-none">
+                     <h3 class="font-black text-sm text-[#0a2240] flex items-center gap-1.5"><span class="text-blue-500 w-4 h-4 flex">${svgs.table}</span> ${displayTableTitle}</h3>
+                     ${hasComparison ? `
+                     <div class="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 pointer-events-auto">
+                         <button onclick="filterCanvasTableRows('all', this)" class="tbl-filter-toggle-btn bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-black shadow-sm">ทั้งหมด</button>
+                         <button onclick="filterCanvasTableRows('attended', this)" class="tbl-filter-toggle-btn bg-transparent text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-white/50">มาเข้าร่วม</button>
+                         <button onclick="filterCanvasTableRows('noshow', this)" class="tbl-filter-toggle-btn bg-transparent text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-white/50">ไม่มางาน</button>
+                     </div>` : ''}
+                 </div>
+                 <div class="overflow-x-auto rounded-xl border border-slate-200 max-h-[500px] overflow-y-auto relative bg-white shadow-inner pointer-events-auto">
+                     <table class="text-sm text-left resizable-table ${tableClass}">
+                         <thead><tr>${headersHtml}</tr></thead>
+                         <tbody class="divide-y divide-slate-50">${rowsHtml || '<tr><td class="p-4 text-center text-slate-300 font-bold">ไม่มีข้อมูลประมวลผล</td></tr>'}</tbody>
+                     </table>
+                 </div>
+             </div>`;
+           
+           container.insertAdjacentHTML('beforeend', tableWrapperCardHtml);
+           initializeTableDynamicFeatures();
+       }
+
+       if(liveSortableInstance) liveSortableInstance.destroy();
+       liveSortableInstance = new Sortable(container, {
+           animation: 200, ghostClass: 'sortable-ghost', filter: 'table, th, td, .resizable-table, select, input, button, .pointer-events-auto, [contenteditable]',
+           onEnd: function () {
+               const orderedIds = Array.from(container.children).map(el => el.getAttribute('data-widget-id')).filter(id => id && id !== 'table_wrapper_combined');
+               const canvasMaps = orderedIds.map(id => liveWidgetMapping.find(m => m.id === id)).filter(Boolean);
+               const otherMaps = liveWidgetMapping.filter(m => !orderedIds.includes(m.id));
+               liveWidgetMapping = [...canvasMaps, ...otherMaps];
+           }
+       });
+       attachLiveCanvasContextEventObservers();
+    }
+
+    function openSmartAddWidgetModal() {
+        Swal.fire({
+            title: '<div class="text-sm font-black">แทรกองค์ประกอบลงแผง Canvas</div>',
+            html: `
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
+                    <button onclick="Swal.close(); injectSpacerTextBlockWidget();" class="p-4 border border-slate-200 rounded-2xl bg-white hover:border-indigo-500 hover:bg-indigo-50 flex flex-col items-center justify-center gap-2 text-center transition">
+                        <span class="w-6 h-6 text-indigo-500">${svgs.info}</span>
+                        <span class="text-[10px] font-black text-slate-700 leading-tight">เพิ่มกล่องข้อความ<br>หัวข้อคั่นบรรทัด</span>
+                    </button>
+                    <button onclick="Swal.close(); injectCustomDataBoxWidget();" class="p-4 border border-slate-200 rounded-2xl bg-white hover:border-emerald-500 hover:bg-emerald-50 flex flex-col items-center justify-center gap-2 text-center transition">
+                        <span class="w-6 h-6 text-emerald-500">${svgs.users}</span>
+                        <span class="text-[10px] font-black text-slate-700 leading-tight">เพิ่มกล่องข้อมูลทำมือ<br>(Custom KPI)</span>
+                    </button>
+                    <button onclick="Swal.close(); openDynamicDataColumnSelectorModal();" class="p-4 border border-slate-200 rounded-2xl bg-white hover:border-cyan-500 hover:bg-cyan-50 flex flex-col items-center justify-center gap-2 text-center transition md:col-span-1 col-span-2">
+                        <span class="w-6 h-6 text-cyan-500">${svgs.pieAlt}</span>
+                        <span class="text-[10px] font-black text-slate-700 leading-tight">ดึงข้อมูลสดสร้างกราฟ<br>(Dynamic Data)</span>
+                    </button>
+                </div>`,
+            showConfirmButton: false, showCancelButton: true, cancelButtonText: 'ปิดหน้าต่าง'
+        });
+    }
+
+    function injectSpacerTextBlockWidget() {
+        let randId = 'sp_node_' + Math.random().toString(36).substr(2, 4);
+        liveWidgetMapping.push({ id: randId, type: 'spacer', layout: {d:12, t:12, m:12}, isFilter: false, customText: '', baseCalc: 'auto', isOriginal: false, style: null });
+        renderSidebarControlElements();
+        renderLiveCanvasDashboardSpace();
+    }
+    
+    function injectCustomDataBoxWidget() {
+        let randId = 'cb_node_' + Math.random().toString(36).substr(2, 4);
+        liveWidgetMapping.push({ 
+            id: randId, source: 'custom', type: 'custom_box', layout: {d:3, t:6, m:12}, 
+            title: 'ข้อมูลกำหนดเอง', alias: 'ข้อมูลกำหนดเอง', isFilter: false, baseCalc: 'auto', isOriginal: false, style: null,
+            customData: { title: 'หัวข้อข้อมูล (Title)', value: '100', unit: 'หน่วย', subtext: 'ข้อความรอง (Subtext)' }
+        });
+        renderSidebarControlElements();
+        renderLiveCanvasDashboardSpace();
+    }
+
+    function openDynamicDataColumnSelectorModal() {
+        let s1Options = fetchedHeaders1.map((h, i) => `<option value="sheet1_${i}">[Sheet 1] ${h}</option>`).join('');
+        let s2Options = fetchedHeaders2.map((h, i) => `<option value="sheet2_${i}">[Sheet 2] ${h}</option>`).join('');
+        let typesHtml = widgetTypes.filter(t => t.val !== 'ignore').map(t => `<option value="${t.val}">${t.text}</option>`).join('');
+
+        Swal.fire({
+            title: '<div class="text-sm font-black">เลือกคอลัมน์ที่ต้องการสร้างการ์ด</div>',
+            html: `
+                <div class="text-left space-y-3 mt-3 text-xs">
+                    <div><label class="block font-bold text-slate-400 mb-1">คอลัมน์ข้อมูล</label>
+                    <select id="popCol" class="w-full p-2.5 bg-slate-50 border rounded-xl font-bold">${s1Options}${s2Options}</select></div>
+                    <div><label class="block font-bold text-slate-400 mb-1">โมดูลการประมวลผล</label>
+                    <select id="popType" class="w-full p-2.5 bg-slate-50 border rounded-xl font-bold">${typesHtml}</select></div>
+                </div>`,
+            showCancelButton: true, confirmButtonText: 'แทรกลงกระดาษ', confirmButtonColor: '#4f46e5', cancelButtonText: 'ยกเลิก'
+        }).then((res) => {
+            if(res.isConfirmed) {
+                let parts = document.getElementById('popCol').value.split('_');
+                let src = parts[0]; let idx = parseInt(parts[1]);
+                let title = src === 'sheet1' ? fetchedHeaders1[idx] : fetchedHeaders2[idx];
+                
+                let selectedType = document.getElementById('popType').value;
+                let newL = 12;
+                if(selectedType === 'kpi_total' || selectedType === 'kpi_percent') newL = 3;
+                else if(selectedType === 'average' || selectedType === 'kpi_compare') newL = 6;
+
+                liveWidgetMapping.push({
+                    id: 'w_ad_' + Math.random().toString(36).substr(2, 4),
+                    source: src, index: idx, title: title, alias: title,
+                    type: selectedType, layout: {d: newL, t: (newL===3?6:newL), m: 12}, note: '', baseCalc: 'auto', isFilter: false, isOriginal: false, style: null
+                });
+                renderSidebarControlElements();
+                renderLiveCanvasDashboardSpace();
+            }
+        });
+    }
+
+    function initializeTableDynamicFeatures() {
+        const table = document.querySelector('.resizable-table');
+        if(!table) return;
+
+        table.style.tableLayout = 'fixed';
+        table.style.width = '100%';
+
+        const headerRow = table.querySelector('thead tr');
+        if(headerRow && !headerRow.classList.contains('js-sortable-ready')) {
+            new Sortable(headerRow, {
+                animation: 150, 
+                draggable: '.draggable-th',
+                preventOnFilter: false,
+                onEnd: () => {
+                    const arrangedIds = Array.from(headerRow.querySelectorAll('.draggable-th')).map(th => th.getAttribute('data-table-col-id'));
+                    const plainWidgets = liveWidgetMapping.filter(m => !arrangedIds.includes(m.id));
+                    const sortedTableWidgets = arrangedIds.map(id => liveWidgetMapping.find(m => m.id === id)).filter(Boolean);
+                    liveWidgetMapping = [...plainWidgets, ...sortedTableWidgets];
+                    renderLiveCanvasDashboardSpace();
+                }
+            });
+            headerRow.classList.add('js-sortable-ready');
+        }
+    }
+
+    function filterCanvasTableRows(status, btn) {
+        document.querySelectorAll('.tbl-filter-toggle-btn').forEach(b => {
+            b.classList.remove('bg-slate-800', 'text-white', 'shadow-sm', 'font-black'); b.classList.add('bg-transparent', 'text-slate-600', 'font-bold');
+        });
+        btn.classList.remove('bg-transparent', 'text-slate-600', 'font-bold'); btn.classList.add('bg-slate-800', 'text-white', 'shadow-sm', 'font-black');
+        document.querySelectorAll('.canvas-tablerow').forEach(row => {
+            if(status === 'all') row.style.display = ''; else row.style.display = row.getAttribute('data-row-status') === status ? '' : 'none';
+        });
+    }
+
+    window.openColumnConfigModal = function(e, mapId) {
+        e.preventDefault(); e.stopPropagation();
+        const map = liveWidgetMapping.find(m => m.id === mapId);
+        if(!map) return;
+
+        let ruleRowsHtml = '';
+        if(map.badgeRules && map.badgeRules.length > 0) {
+            map.badgeRules.forEach(r => ruleRowsHtml += createPillRuleModalRowTemplate(r.val, r.color));
+        } else { ruleRowsHtml = createPillRuleModalRowTemplate('', '#10b981'); }
+
+        let curWidth = map.tableColWidth ? parseInt(map.tableColWidth) : 0;
+        let widthDisplay = curWidth > 0 ? curWidth + '%' : 'Auto';
+
+        Swal.fire({
+            title: `<div class="text-sm font-black flex items-center justify-center gap-1.5">ตั้งค่าคอลัมน์ & ป้ายสีเม็ดยา</div>`,
+            html: `
+                <div class="mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-left shadow-inner">
+                    <label class="block text-xs font-black text-slate-700 mb-3 flex justify-between items-center">
+                        <span><span class="text-indigo-500 mr-1">↔</span> ความกว้างคอลัมน์ (%)</span>
+                        <span id="colWidthVal" class="bg-indigo-600 text-white px-2 py-0.5 rounded-lg text-[10px]">${widthDisplay}</span>
+                    </label>
+                    <input type="range" id="colWidthSlider" min="0" max="100" step="1" value="${curWidth}" class="w-full accent-indigo-600 cursor-pointer mb-2" oninput="let v = this.value; document.getElementById('colWidthVal').innerText = v > 0 ? v + '%' : 'Auto';">
+                    <div class="flex justify-between items-start mt-1">
+                        <span class="text-[10px] text-slate-400 font-medium leading-tight max-w-[75%]">* 0 = ให้ระบบแบ่งพื้นที่ที่เหลืออัตโนมัติ (Auto)</span>
+                        <button onclick="document.getElementById('colWidthSlider').value=0; document.getElementById('colWidthVal').innerText='Auto';" class="text-[10px] font-black text-indigo-600 hover:text-indigo-800 bg-indigo-100/50 hover:bg-indigo-100 px-2 py-1 rounded transition">รีเซ็ตเป็น Auto</button>
+                    </div>
+                </div>
+                <div class="text-left text-xs font-black text-slate-700 border-t border-slate-100 pt-4 flex items-center gap-1.5"><span class="text-rose-500">${svgs.info}</span> กำหนดสีไฮไลต์คำ (Pill Badge)</div>
+                <div id="swalPillRulesWrap" class="space-y-2 mt-3 max-h-[200px] overflow-y-auto pr-1">${ruleRowsHtml}</div>
+                <button onclick="insertNewBadgeRuleRowToModal()" class="mt-4 w-full py-2.5 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 rounded-xl font-black text-xs border border-slate-200 border-dashed transition shadow-sm">+ เพิ่มเงื่อนไขคำใหม่</button>`,
+            showCancelButton: true, confirmButtonText: 'บันทึกการตั้งค่า', confirmButtonColor: '#4f46e5', cancelButtonText: 'ยกเลิก'
+        }).then((res) => {
+            if(res.isConfirmed) {
+                const ruleNodes = document.querySelectorAll('.modal-rule-row-item');
+                const savedRules = [];
+                ruleNodes.forEach(rn => {
+                    let textWord = rn.querySelector('.r-val').value.trim();
+                    let hexColor = rn.querySelector('.r-color').value;
+                    if(textWord) savedRules.push({ val: textWord, color: hexColor });
+                });
+                map.badgeRules = savedRules;
+                
+                let sliderVal = document.getElementById('colWidthSlider').value;
+                map.tableColWidth = parseInt(sliderVal) > 0 ? sliderVal + '%' : '';
+
+                renderLiveCanvasDashboardSpace(); 
+            }
+        });
+    }
+
+    function createPillRuleModalRowTemplate(v, c) {
+        return `<div class="modal-rule-row-item flex gap-2 bg-white border border-slate-200 p-2 rounded-xl"><input type="text" class="r-val flex-1 p-2 text-xs border border-slate-100 bg-slate-50 rounded-lg font-bold" placeholder="คำในตาราง" value="${v}"><input type="color" class="r-color w-16 h-[34px] p-0.5 border border-slate-100 rounded-lg cursor-pointer" value="${c}"><button onclick="this.parentNode.remove()" class="text-rose-400 p-2 hover:text-rose-600"><span class="w-4 h-4 flex">${svgs.trash}</span></button></div>`;
+    }
+    window.insertNewBadgeRuleRowToModal = () => document.getElementById('swalPillRulesWrap').insertAdjacentHTML('beforeend', createPillRuleModalRowTemplate('', '#3b82f6'));
+
+    function attachLiveCanvasContextEventObservers() {
+        document.querySelectorAll('.live-widget-box').forEach(box => {
+            box.addEventListener('contextmenu', function(e) {
+                e.preventDefault(); activeWidgetContextEl = this;
+                const menu = document.getElementById('widgetContextMenu');
+                menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+                menu.classList.remove('hidden');
+            });
+        });
+    }
+
+    function updateLiveWidgetGridWidth(gridSize) {
+        if(!activeWidgetContextEl) return;
+        const wid = activeWidgetContextEl.getAttribute('data-widget-id');
+        let match = liveWidgetMapping.find(m => m.id === wid);
+        
+        if(!match && wid === 'table_wrapper_combined') {
+            match = { id: 'table_wrapper_combined', type: 'table_wrapper_combined', layout: {d:12, t:12, m:12}, isFilter: false };
+            liveWidgetMapping.push(match);
+        }
+
+        if(match) {
+            if (typeof match.layout === 'number') match.layout = {d: match.layout, t: match.layout, m: match.layout};
+            if (!match.layout) match.layout = {d: 12, t: 12, m: 12};
+            
+            if(window.currentPreviewDevice === 'desktop') {
+                match.layout.d = gridSize;
+                match.layout.t = gridSize; 
+                match.layout.m = gridSize;
+            } else if(window.currentPreviewDevice === 'tablet') {
+                match.layout.t = gridSize;
+                match.layout.m = gridSize;
+            } else if(window.currentPreviewDevice === 'mobile') {
+                match.layout.m = gridSize;
+            }
+        }
+        
+        document.getElementById('widgetContextMenu').classList.add('hidden');
+        renderLiveCanvasDashboardSpace();
+    }
+
+    function deleteLiveWidgetFromCanvas() {
+        if(!activeWidgetContextEl) return;
+        const wid = activeWidgetContextEl.getAttribute('data-widget-id');
+        const match = liveWidgetMapping.find(m => m.id === wid);
+        
+        if (match) {
+            if (match.isOriginal) {
+                match.type = 'ignore';
+                Swal.fire({icon: 'info', title: 'เปลี่ยนเป็นซ่อนการแสดงผล', text: 'ข้อมูลพื้นฐานลบไม่ได้ ระบบได้ปรับเป็นซ่อนให้แทนครับ', timer: 2500, showConfirmButton: false});
+            } else {
+                liveWidgetMapping = liveWidgetMapping.filter(m => m.id !== wid);
+            }
+        }
+        
+        document.getElementById('widgetContextMenu').classList.add('hidden');
+        renderSidebarControlElements();
+        renderLiveCanvasDashboardSpace();
+    }
+
+    async function saveProjectConfigStateToServer() {
+        const titleNode = document.getElementById('dashTitleInput').value.trim();
+        if(!titleNode) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุชื่อหัวข้อแดชบอร์ดโครงการด้วยครับ', 'warning');
+        
+        if(!liveWidgetMapping.some(m => m.type === 'table_column')) {
+             liveWidgetMapping = liveWidgetMapping.filter(m => m.type !== 'table_wrapper_combined');
+        } else if(!liveWidgetMapping.some(m => m.type === 'table_wrapper_combined')) {
+             liveWidgetMapping.push({ id: 'table_wrapper_combined', type: 'table_wrapper_combined', layout: {d:12, t:12, m:12}, isFilter: false });
+        }
+
+        currentAppConfig.mapping = liveWidgetMapping;
+        const payload = {
+            action: editingProjectId ? 'updateProject' : 'saveProject',
+            userEmail: currentUserEmail, projectName: titleNode, logoUrl: document.getElementById('dashLogoInput').value.trim(), config: currentAppConfig
+        };
+        if(editingProjectId) payload.projectId = editingProjectId;
+
+        showLoading('กำลังเผยแพร่โครงสร้างสเตทขึ้นคลาวด์องค์กร...');
+        try {
+            const json = await apiCall(payload);
+            hideLoading();
+            if(json.status === 'success') {
+                Swal.fire({ icon:'success', title: 'บันทึกสำเร็จและอัปเดตลิงก์แชร์แล้ว!', confirmButtonColor: '#4f46e5' })
+                .then(() => closeProjectBuilder());
+                fetchMyProjects();
+            }
+        } catch(e) { hideLoading(); Swal.fire('Error', 'เซฟข้อมูลไม่สำเร็จ', 'error'); }
+    }
+
+    async function loadSharedDashboardView(projectId) {
+        showLoading('กำลังรวบรวมและถ่ายทอดสดข้อมูลสถิติรายงาน...');
+        try {
+            const confData = await apiCall({ action: 'loadProject', projectId: projectId });
+            currentAppConfig = confData.config;
+            document.getElementById('vRenderTitle').innerText = confData.projectName;
+            
+            if (confData.logoUrl) {
+                 document.getElementById('vRenderLogo').innerHTML = `<img src="${confData.logoUrl}" class="h-14 md:h-16 bg-white p-2 rounded-xl shadow object-contain">`;
+                 document.getElementById('vRenderLogo').classList.remove('hidden');
+            }
+
+            const dbData = await apiCall({ action: 'getSheetData', spreadsheetId: currentAppConfig.spreadsheetId, sheet1Name: currentAppConfig.sheet1Name, sheet2Name: currentAppConfig.sheet2Name });
+            hideLoading();
+
+            rawData1 = dbData.data1.length > 0 ? dbData.data1.slice(1) : []; 
+            rawData2 = (dbData.data2 && dbData.data2.length > 0) ? dbData.data2.slice(1) : [];
+            
+            buildGlobalFilterUI(currentAppConfig.mapping);
+            renderWidgetsViewOnlyContainer(currentAppConfig.mapping);
+        } catch(e) { hideLoading(); Swal.fire('Error', 'ไม่สามารถโหลดข้อมูลแดชบอร์ดได้', 'error'); }
+    }
+
+    function buildGlobalFilterUI(maps) {
+        const filterConfig = maps.find(m => m.isFilter === true);
+        const filterZone = document.getElementById('canvasGlobalFilterZone') || document.getElementById('sharedGlobalFilterZone');
+        if(!filterZone) return;
+        if(!filterConfig) { filterZone.innerHTML = ''; return; }
+
+        let targetData = filterConfig.source === 'sheet1' ? rawData1 : rawData2;
+        let uniqueValues = [...new Set(targetData.map(r => String(r[filterConfig.index]).trim()))].filter(v => v);
+        let optHtml = `<option value="ALL">แสดงผลคัดกรองฐานข้อมูลรวมทั้งหมด</option>` + uniqueValues.map(v => `<option value="${v}">${v}</option>`).join('');
+        filterZone.innerHTML = `<div class="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm w-full"><span class="text-slate-400 ml-1"><span class="w-4 h-4 flex">${svgs.filter}</span></span><div class="flex-1 min-w-0"><select onchange="applyLiveFilterStateQuery(this.value)" class="w-full text-xs font-black text-[#0a2240] outline-none bg-transparent cursor-pointer truncate">${optHtml}</select></div></div>`;
+    }
+
+    function applyLiveFilterStateQuery(val) {
+        currentGlobalFilterVal = val;
+        if(document.getElementById('cmsSplitEditorZone').classList.contains('hidden') === false) renderLiveCanvasDashboardSpace();
+        else renderWidgetsViewOnlyContainer(currentAppConfig.mapping);
+    }
+
+    function renderWidgetsViewOnlyContainer(maps) {
+        const container = document.getElementById('vWidgetContainer'); container.innerHTML = "";
+        const filterConfig = maps.find(m => m.isFilter === true);
+        let d1 = [...rawData1], d2 = [...rawData2];
+
+        if (filterConfig && currentGlobalFilterVal !== "ALL") {
+           if (filterConfig.source === 'sheet1') d1 = rawData1.filter(r => String(r[filterConfig.index]).trim() === currentGlobalFilterVal);
+           else d2 = rawData2.filter(r => String(r[filterConfig.index]).trim() === currentGlobalFilterVal);
+        }
+
+        const tableMaps = maps.filter(m => m.type === 'table_column');
+        const activeWidgets = maps.filter(m => m.type !== 'ignore' && m.type !== 'table_column' && !m.isFilter && m.type !== 'table_wrapper_combined');
+
+        activeWidgets.forEach(m => {
+            let data = m.source === 'sheet1' ? d1 : d2;
+            
+            let l = m.layout;
+            if (typeof l === 'number') l = {d: l, t: l, m: l};
+            if (!l) l = {d: 12, t: 12, m: 12};
+            let colSpanClass = `col-span-${l.m} md:col-span-${l.t} lg:col-span-${l.d}`;
+
+            let dispHeaderTitle = m.alias || m.title;
+            let innerHtml = '';
+
+            let defBg = m.type === 'kpi_percent' ? '#0a2240' : '#ffffff';
+            let defText = m.type === 'kpi_percent' ? '#ffffff' : '#0a2240';
+            let defSub = m.type === 'kpi_percent' ? '#bfdbfe' : '#64748b'; 
+            let defAccent = m.type === 'kpi_percent' ? '#10b981' : '#4f46e5';
+            
+            let cBg = m.style?.bgColor || defBg;
+            let cText = m.style?.textColor || defText;
+            let cSub = m.style?.subTextColor || defSub;
+            let cAccent = m.style?.accentColor || defAccent;
+
+            let totalBaseForPct = 0;
+            if (m.baseCalc === 'sheet1') totalBaseForPct = rawData1.length;
+            else if (m.baseCalc === 'sheet2') totalBaseForPct = rawData2.length;
+
+            if (m.type === 'spacer') {
+                container.innerHTML += `<div class="col-span-12 py-2"><h2 class="text-xl font-black" style="color: ${cText};">${m.customText || ''}</h2></div>`;
+                return;
+            }
+            if (m.type === 'custom_box') {
+                let t = m.customData?.title || 'หัวข้อข้อมูล (Title)';
+                let v = m.customData?.value || '0';
+                let u = m.customData?.unit || '';
+                let st = m.customData?.subtext || '';
+                innerHtml = `<div class="glass-card p-6 h-full flex flex-col justify-between" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="text-xs font-black uppercase mb-3" style="color: ${cSub};">${t}</div><div class="text-3xl font-black" style="color: ${cText};">${v} <span class="text-xs font-bold" style="color: ${cSub};">${u}</span></div>${st ? `<div class="mt-2 text-[10px] font-bold px-2 py-0.5 rounded-lg w-fit" style="color: ${cAccent}; background-color: ${cAccent}1A;">${st}</div>` : ''}</div></div>`;
+            }
+            else if (m.type === 'kpi_total') {
+                let count = 0; data.forEach(r => { if(String(r[m.index]).trim()) count++; });
+                innerHtml = `<div class="glass-card p-6 h-full flex flex-col justify-between" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="text-xs font-black uppercase mb-3" style="color: ${cSub};">${dispHeaderTitle}</div><div class="text-3xl font-black" style="color: ${cText};">${count.toLocaleString()} <span class="text-xs font-bold" style="color: ${cSub};">รายการ</span></div></div></div>`;
+            }
+            else if (m.type === 'kpi_percent') {
+                let count = 0; data.forEach(r => { if(String(r[m.index]).trim() && String(r[m.index]).trim() !== "-") count++; });
+                let totalBase = totalBaseForPct > 0 ? totalBaseForPct : (m.source === 'sheet2' ? rawData1.length : data.length); 
+                let pct = totalBase > 0 ? ((count * 100) / totalBase).toFixed(1) : "0.0";
+                
+                let baseLabelHtml = totalBaseForPct > 0 ? `<div class="text-[9px] mt-1 text-indigo-300">* อิงยอด ${m.baseCalc === 'sheet1' ? 'Sheet 1' : 'Sheet 2'}</div>` : '';
+                innerHtml = `<div class="glass-card p-6 h-full flex flex-col justify-between" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="text-xs font-black uppercase mb-3 whitespace-normal leading-snug" style="color: ${cSub};">${dispHeaderTitle}</div><div class="text-3xl font-black mb-1" style="color: ${cText};">${count.toLocaleString()} <span class="text-xs" style="color: ${cSub};">คน</span></div><div class="mt-2 w-fit px-2.5 py-1 rounded-lg text-xs font-black border" style="color: ${cAccent}; background-color: ${cAccent}33; border-color: ${cAccent}4D;">คิดเป็น ${pct}%</div>${baseLabelHtml}</div></div>`;
+            }
+            else if (m.type === 'kpi_compare') {
+                let primaryData = d1;
+                let secondaryData = d2;
+                
+                let count1 = 0; primaryData.forEach(r => { if(String(r[m.index] || "").trim() && String(r[m.index] || "").trim() !== "-") count1++; });
+                let count2 = 0; secondaryData.forEach(r => { if(String(r[m.index] || "").trim() && String(r[m.index] || "").trim() !== "-") count2++; });
+                
+                let s1Name = currentAppConfig.sheet1Name || 'Sheet 1';
+                let s2Name = currentAppConfig.sheet2Name || 'Sheet 2';
+                
+                let label1 = (m.compareLabels && m.compareLabels['primary']) ? m.compareLabels['primary'] : s1Name;
+                let label2 = (m.compareLabels && m.compareLabels['secondary']) ? m.compareLabels['secondary'] : s2Name;
+
+                let baseTotal = totalBaseForPct > 0 ? totalBaseForPct : rawData1.length; 
+                if(baseTotal === 0) baseTotal = 1;
+                
+                let pct1 = ((count1 * 100) / baseTotal).toFixed(1);
+                let pct2 = ((count2 * 100) / baseTotal).toFixed(1);
+                
+                let baseRefText = m.baseCalc === 'sheet2' ? `Sheet 2 (${rawData2.length})` : (m.baseCalc === 'sheet1' ? `Sheet 1 (${rawData1.length})` : `Sheet 1 (${rawData1.length})`);
+
+                innerHtml = `
+                <div class="glass-card p-6 h-full flex flex-col justify-between" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};">
+                    <div>
+                        <div class="text-xs font-black uppercase mb-3 whitespace-normal leading-snug" style="color: ${cSub};">${dispHeaderTitle} (เปรียบเทียบ)</div>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <div class="p-3 rounded-xl" style="background-color: ${cText}0D; border: 1px solid ${cText}1A;">
+                                <div class="text-[10px] font-bold mb-1 truncate" style="color: ${cSub};">${label1}</div>
+                                <div class="text-xl font-black mb-1" style="color: ${cText}; px-1">${count1.toLocaleString()}</div>
+                                <div class="text-[10px] font-black px-1.5 py-0.5 mx-1 rounded w-fit" style="background-color: #10b98133; color: #10b981;">${pct1}%</div>
+                            </div>
+                            <div class="p-3 rounded-xl" style="background-color: ${cText}0D; border: 1px solid ${cText}1A;">
+                                <div class="text-[10px] font-bold mb-1 truncate" style="color: ${cSub};">${label2}</div>
+                                <div class="text-xl font-black mb-1" style="color: ${cText}; px-1">${count2.toLocaleString()}</div>
+                                <div class="text-[10px] font-black px-1.5 py-0.5 mx-1 rounded w-fit" style="background-color: #f43f5e33; color: #f43f5e;">${pct2}%</div>
+                            </div>
+                        </div>
+                        <div class="text-[9px] mt-2 flex items-center gap-1" style="color: ${cSub};">
+                            * อิงผลรวมจาก: ${baseRefText}
+                        </div>
+                    </div>
+                </div>`;
+            }
+            else if (m.type === 'average') {
+                let sum = 0, count = 0; data.forEach(r => { let v = parseFloat(r[m.index]); if(!isNaN(v)){ sum += v; count++; } });
+                let avg = count ? (sum/count).toFixed(2) : "0.00"; let pct = (parseFloat(avg)/5)*100;
+                innerHtml = `<div class="glass-card p-6 flex flex-col justify-between h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="flex justify-between items-start mb-3 gap-2"><span class="text-xs font-black flex-1 whitespace-normal leading-snug" style="color: ${cSub};">${dispHeaderTitle}</span><span class="text-lg font-black px-2.5 py-0.5 rounded-xl border shadow-sm" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${avg}</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: ${cText}1A;"><div class="h-full" style="width:${pct}%; background-color: ${cAccent};"></div></div></div></div>`;
+            }
+            else if (m.type === 'single_choice' || m.type === 'multi_choice') {
+                let counts = {}; let validTotal = 0;
+                data.forEach(r => { let val = String(r[m.index] || "").trim(); if(val && val !== "-") { validTotal++; if (m.type === 'multi_choice') val.split(/,\s*/).forEach(x => { if(x) counts[x] = (counts[x]||0)+1; }); else counts[val] = (counts[val]||0)+1; } });
+                
+                let denominator = totalBaseForPct > 0 ? totalBaseForPct : validTotal;
+                let sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+                let tbody = sorted.map(it => { let p = denominator > 0 ? ((it[1]*100)/denominator).toFixed(2) : "0.00"; return `<tr style="border-bottom: 1px solid ${cSub}33;"><td class="p-3 font-medium text-xs leading-tight" style="color: ${cText};">${it[0]}</td><td class="p-3 text-right font-black text-xs w-20" style="color: ${cText};">${it[1].toLocaleString()}</td><td class="p-3 text-right font-black text-xs w-20" style="color: ${cAccent}; background-color: ${cAccent}1A;">${p}%</td></tr>`; }).join('');
+                innerHtml = `<div class="glass-card p-6 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><h3 class="font-black text-sm mb-4 flex items-center gap-2"><span style="color: ${cAccent};" class="w-5 h-5 flex">${svgs.pieAlt}</span> <span class="whitespace-normal leading-tight flex-1" style="color: ${cText};">${dispHeaderTitle}</span></h3><div class="overflow-x-auto rounded-xl shadow-inner flex-1" style="border: 1px solid ${cSub}33;"><table class="w-full text-xs text-left border-collapse"><thead class="font-bold text-[10px]" style="color: ${cSub}; border-bottom: 1px solid ${cSub}33; background-color: ${cSub}1A;"><tr><th class="p-2.5">รายการ</th><th class="p-2.5 text-right">จำนวน</th><th class="p-4 text-right">ร้อยละ</th></tr></thead><tbody style="background-color: transparent;">${tbody || `<tr><td colspan="3" class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีข้อมูล</td></tr>`}</tbody></table></div></div>`;
+            }
+            else if (m.type === 'ranking') {
+                let counts = {}; let validTotal = 0;
+                data.forEach(r => { let val = String(r[m.index] || "").trim(); if(val && val !== "-") { validTotal++; counts[val] = (counts[val]||0)+1; } });
+                
+                let denominator = totalBaseForPct > 0 ? totalBaseForPct : validTotal;
+                let limit = rankingLimits[m.index] || 'ALL';
+                let sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]); if(limit !== 'ALL') sorted = sorted.slice(0, parseInt(limit));
+                let tbody = sorted.map((it, idx) => { 
+                    let p = denominator > 0 ? ((it[1]*100)/denominator).toFixed(1) : "0.0"; 
+                    let rankIcon = '';
+                    if (idx === 0) rankIcon = svgs.rank1;
+                    else if (idx === 1) rankIcon = svgs.rank2;
+                    else if (idx === 2) rankIcon = svgs.rank3;
+                    else rankIcon = `<span class="font-black" style="color:${cAccent};">${idx+1}</span>`;
+                    return `<div class="flex items-center justify-between p-2.5 gap-2" style="border-bottom: 1px solid ${cSub}1A;"><div class="w-6 flex justify-center text-sm">${rankIcon}</div><div class="flex-1 min-w-0 font-bold text-xs leading-snug whitespace-normal" style="color: ${cText};">${it[0]}</div><div class="text-right flex-shrink-0"><div class="font-black text-xs" style="color: ${cText};">${it[1].toLocaleString()}</div><div class="text-[9px] font-bold" style="color: ${cSub};">${p}%</div></div></div>`; 
+                }).join('');
+                innerHtml = `<div class="glass-card p-6 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div class="flex items-start justify-between mb-4 gap-2"><h3 class="font-black text-sm flex items-center gap-1.5" style="color: ${cText};"><span style="color: ${cAccent};" class="w-5 h-5 flex">${svgs.histogram}</span> <span class="whitespace-normal leading-tight">${dispHeaderTitle}</span></h3></div><div class="rounded-xl p-1.5 flex-1 overflow-y-auto max-h-[300px] shadow-inner print:max-h-none" style="background-color: ${cText}0D; border: 1px solid ${cSub}1A;">${tbody || `<div class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีข้อมูล</div>`}</div></div>`;
+            }
+            else if (m.type === 'text_list') {
+                let txts = [...new Set(data.map(r => String(r[m.index]).trim()))].filter(v => v && v!=="-" && v.length > 2);
+                let listHtml = txts.map((t, i) => `<div class="p-3 flex items-start gap-2.5 break-inside-avoid" style="background-color: transparent; border-bottom: 1px solid ${cSub}1A;"><div class="w-5 h-5 rounded-full flex items-center justify-center font-black flex-shrink-0 text-[9px] mt-0.5 border" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${i+1}</div><div class="text-xs leading-relaxed pt-0.5 whitespace-normal" style="color: ${cText};">${t}</div></div>`).join('');
+                innerHtml = `<div class="glass-card p-6 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><h3 class="font-black text-sm mb-4 flex items-center gap-1.5" style="color: ${cText};"><span style="color: ${cSub};" class="w-5 h-5 flex">${svgs.comment}</span> <span class="whitespace-normal leading-tight">${dispHeaderTitle}</span></h3><div class="rounded-xl max-h-[250px] overflow-y-auto print:max-h-none shadow-inner flex-1" style="background-color: ${cText}0D; border: 1px solid ${cSub}1A;">${listHtml || `<div class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีความคิดเห็น</div>`}</div></div>`;
+            }
+
+            if(innerHtml) container.innerHTML += `<div class="${colSpanClass}">${innerHtml}</div>`;
+        });
+
+        if (tableMaps.length > 0) {
+           let hasComparison = (rawData1.length > 0 && rawData2.length > 0);
+           let keyIndex1 = tableMaps[0].index;
+           let keyIndex2 = fetchedHeaders2.length > 0 ? 0 : 0;
+           
+           let colsCount = tableMaps.length + (hasComparison ? 1 : 0);
+           let tableClass = colsCount > 2 ? 'table-auto-scroll' : '';
+
+           let headersHtml = tableMaps.map(m => {
+               let w = m.tableColWidth || '';
+               let widthStyle = w ? `width:${w};` : '';
+               return `<th oncontextmenu="openColumnConfigModal(event, '${m.id}')" class="p-3.5 bg-slate-50 border-r border-b border-slate-200 text-xs font-black text-slate-500 relative align-middle cursor-context-menu hover:bg-slate-100 transition draggable-th" data-table-col-id="${m.id}" style="${widthStyle}">
+                          <div class="flex items-center gap-1.5 pointer-events-none"><span class="w-4 h-4 flex">${svgs.arrows}</span> <span class="line-clamp-2">${m.alias || m.title}</span></div>
+                       </th>`;
+            }).join('');
+
+            if (hasComparison) {
+               let tableMapInfo = maps.find(m => m.id === 'table_wrapper_combined');
+               let w = (tableMapInfo && tableMapInfo.statusColWidth) ? tableMapInfo.statusColWidth : '';
+               let widthStyle = w ? `width:${w};` : '';
+               headersHtml += `<th class="p-3.5 bg-slate-50 border-r border-b border-slate-200 text-xs font-black text-center text-slate-500 align-middle" style="${widthStyle}">สถานะเข้างาน</th>`;
+            }
+
+            let rowsHtml = d1.map(r => {
+                let idKey = String(r[keyIndex1] || "").trim();
+                let isFound = false;
+                if (hasComparison) isFound = rawData2.some(cr => String(cr[keyIndex2] || "").trim() === idKey);
+                let currentStatus = isFound ? 'attended' : 'noshow';
+
+                let tds = tableMaps.map(m => {
+                    let val = m.source === 'sheet1' ? String(r[m.index] || "").trim() : '';
+                    if(m.source === 'sheet2' && hasComparison) {
+                        let foundRow = rawData2.find(cr => String(cr[keyIndex2] || "").trim() === idKey);
+                        if(foundRow) val = String(foundRow[m.index] || "").trim();
+                    }
+
+                    if(m.badgeRules && m.badgeRules.length > 0) {
+                        let rule = m.badgeRules.find(rl => rl.val === val);
+                        if(rule) {
+                            let fontColor = getTextColorForBackground(rule.color);
+                            val = `<span class="px-3 py-1 rounded-full text-[11px] font-black inline-block shadow-sm" style="background-color:${rule.color}; color:${fontColor};">${val}</span>`;
+                        }
+                    }
+                    if (val.startsWith('http')) return `<td class="p-3.5 text-xs"><a href="${val}" target="_blank" class="bg-indigo-50 text-indigo-600 px-2 py-1 rounded-lg text-[10px] font-black hover:bg-indigo-600 inline-flex items-center gap-1"><span class="w-3 h-3 flex">${svgs.link}</span> เปิดดู</a></td>`;
+                    return `<td class="p-3.5 text-xs font-medium text-slate-600 leading-relaxed">${val}</td>`;
+                }).join('');
+
+                if (hasComparison) {
+                    let badge = isFound 
+                        ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 w-fit mx-auto"><span class="w-3.5 h-3.5 flex">${svgs.check}</span> เข้าร่วม</span>`
+                        : `<span class="bg-rose-50 text-rose-700 border border-rose-100 px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 w-fit mx-auto"><span class="w-3.5 h-3.5 flex">${svgs.crossCircle}</span> ไม่มางาน</span>`;
+                    tds += `<td class="p-3.5 text-center">${badge}</td>`;
+                }
+                return `<tr class="canvas-tablerow border-b border-slate-100 text-xs" data-row-status="${currentStatus}">${tds}</tr>`;
+            }).join('');
+
+            let tableMapInfo = maps.find(m => m.id === 'table_wrapper_combined');
+            let displayTableTitle = tableMapInfo && tableMapInfo.customTitle ? tableMapInfo.customTitle : 'รายงานตารางข้อมูลสรุปรายงานรวม';
+            
+            let tL = tableMapInfo && tableMapInfo.layout ? tableMapInfo.layout : {d:12, t:12, m:12};
+            if (typeof tL === 'number') tL = {d:tL, t:tL, m:tL};
+            let tableColSpanClass = `col-span-${tL.m} md:col-span-${tL.t} lg:col-span-${tL.d}`;
+
+            let tableCard = `
+             <div class="${tableColSpanClass} glass-card p-6 flex flex-col mb-12">
+                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 gap-4 mb-4">
+                     <h3 class="font-black text-sm text-[#0a2240] flex items-center gap-1.5"><span class="text-blue-500 w-4 h-4 flex">${svgs.table}</span> ${displayTableTitle}</h3>
+                     ${hasComparison ? `
+                     <div class="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 no-print">
+                         <button onclick="filterCanvasTableRows('all', this)" class="tbl-filter-toggle-btn bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-black shadow-sm">ทั้งหมด</button>
+                         <button onclick="filterCanvasTableRows('attended', this)" class="tbl-filter-toggle-btn bg-transparent text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-white/50">มาเข้าร่วม</button>
+                         <button onclick="filterCanvasTableRows('noshow', this)" class="tbl-filter-toggle-btn bg-transparent text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-white/50">ไม่มางาน</button>
+                     </div>` : ''}
+                 </div>
+                 <div class="overflow-x-auto rounded-xl border border-slate-200 max-h-[600px] overflow-y-auto relative bg-white shadow-inner">
+                     <table class="text-sm text-left resizable-table ${tableClass}">
+                         <thead><tr>${headersHtml}</tr></thead>
+                         <tbody class="divide-y divide-slate-50">${rowsHtml}</tbody>
+                     </table>
+                 </div>
+             </div>`;
+            container.insertAdjacentHTML('beforeend', tableCard);
+        }
+    }
+
+    function showLoading(msg) { document.getElementById('loadText').innerText=msg; document.getElementById('loading').classList.remove('hidden'); }
+    function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
+  </script>
+</body>
+</html>
