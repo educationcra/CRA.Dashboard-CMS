@@ -177,7 +177,7 @@
             <div class="mt-2 p-2 bg-slate-50 rounded-xl border border-slate-200 flex flex-col gap-1.5 text-[11px]">
                  <div class="flex items-center gap-1.5">
                      <input type="checkbox" id="selectAllSidebarChks" onchange="toggleBulkSelectAllSidebarRows(this.checked)" class="accent-indigo-600 rounded cursor-pointer">
-                     <span class="font-bold text-slate-500">เลือกทั้งหมดเพื่อสั่งการแบบกลุ่ม</span>
+                     <span class="font-bold text-slate-500">เลือกทั้งหมดในแท็บนี้เพื่อสั่งการ</span>
                  </div>
                  
                  <div class="grid grid-cols-2 gap-1.5 relative">
@@ -186,12 +186,12 @@
                          <div class="custom-select" id="dd_bulk_type">
                              <div class="custom-select__trigger" onclick="toggleCustomDropdown('dd_bulk_type', event)" style="padding: 0.35rem 0.5rem; border-color: #cbd5e1;">
                                  <div class="flex items-center gap-1 selected-content">
-                                     <span class="text-slate-400">-- เปลี่ยนประเภทกลุ่ม --</span>
+                                     <span class="text-slate-400">-- เปลี่ยนประเภท --</span>
                                  </div>
                                  <span class="text-slate-400" id="dd_bulk_type_arrow"></span>
                              </div>
                              <div class="custom-options" id="bulk_type_options">
-                                 <div class="custom-option" onclick="selectBulkType('', '-- เปลี่ยนประเภทกลุ่ม --', event)"><span class="text-slate-400">-- ไม่เปลี่ยน --</span></div>
+                                 <div class="custom-option" onclick="selectBulkType('', '-- เปลี่ยนประเภท --', event)"><span class="text-slate-400">-- ไม่เปลี่ยน --</span></div>
                              </div>
                          </div>
                      </div>
@@ -201,12 +201,12 @@
                          <div class="custom-select" id="dd_bulk_layout">
                              <div class="custom-select__trigger" onclick="toggleCustomDropdown('dd_bulk_layout', event)" style="padding: 0.35rem 0.5rem; border-color: #cbd5e1;">
                                  <div class="flex items-center gap-1 selected-content">
-                                     <span class="text-slate-400">-- เปลี่ยนขนาดกลุ่ม --</span>
+                                     <span class="text-slate-400">-- เปลี่ยนขนาด --</span>
                                  </div>
                                  <span class="text-slate-400" id="dd_bulk_layout_arrow"></span>
                              </div>
                              <div class="custom-options">
-                                 <div class="custom-option" onclick="selectBulkLayout('', '-- เปลี่ยนขนาดกลุ่ม --', event)"><span class="text-slate-400">-- ไม่เปลี่ยน --</span></div>
+                                 <div class="custom-option" onclick="selectBulkLayout('', '-- เปลี่ยนขนาด --', event)"><span class="text-slate-400">-- ไม่เปลี่ยน --</span></div>
                                  <div class="custom-option" onclick="selectBulkLayout('12', 'กว้าง 100%', event)"><span>กว้าง 100%</span></div>
                                  <div class="custom-option" onclick="selectBulkLayout('6', 'กว้าง 50%', event)"><span>กว้าง 50%</span></div>
                                  <div class="custom-option" onclick="selectBulkLayout('4', 'กว้าง 33%', event)"><span>กว้าง 33%</span></div>
@@ -217,6 +217,15 @@
                  </div>
 
                  <button onclick="executeSidebarBulkActionState()" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-black text-center transition shadow-sm mt-1">บังคับใช้ฟังก์ชันกลุ่มพร้อมกัน</button>
+            </div>
+        </div>
+
+        <!-- 🟢 แท็บ (Tabs) สลับดู Widget -->
+        <div class="px-4 pt-3 pb-1 bg-slate-50/50 border-t border-slate-200">
+            <div class="flex p-1 bg-slate-200/60 rounded-xl gap-1" id="sidebarTabsZone">
+                <button onclick="switchSidebarTab('sheet1')" id="tab_sheet1" class="flex-1 py-1.5 text-[10px] font-bold rounded-lg bg-white text-indigo-600 shadow-sm transition">Sheet 1</button>
+                <button onclick="switchSidebarTab('sheet2')" id="tab_sheet2" class="flex-1 py-1.5 text-[10px] font-bold rounded-lg text-slate-500 hover:bg-white/50 transition">Sheet 2</button>
+                <button onclick="switchSidebarTab('custom')" id="tab_custom" class="flex-1 py-1.5 text-[10px] font-bold rounded-lg text-slate-500 hover:bg-white/50 transition">ส่วนเสริม</button>
             </div>
         </div>
 
@@ -379,24 +388,40 @@
     let liveWidgetMapping = []; 
     let activeWidgetContextEl = null;
     
+    // แท็บตั้งต้นสำหรับ Sidebar
+    let currentSidebarTab = 'sheet1';
     window.currentPreviewDevice = 'desktop';
 
     const currentUserEmail = localStorage.getItem('user_email');
     const currentUserName = localStorage.getItem('user_name') || currentUserEmail;
 
-    // 🟢 ฟังก์ชันสำหรับอัปเดตชื่อโปรเจกต์แบบเรียลไทม์
+    // 🟢 ฟังก์ชันสำหรับสลับแท็บ Sidebar
+    window.switchSidebarTab = function(tab) {
+        currentSidebarTab = tab;
+        ['sheet1', 'sheet2', 'custom'].forEach(t => {
+            const btn = document.getElementById('tab_' + t);
+            if(!btn) return;
+            if(t === tab) {
+                btn.className = 'flex-1 py-1.5 text-[10px] font-bold rounded-lg bg-white text-indigo-600 shadow-sm transition';
+            } else {
+                btn.className = 'flex-1 py-1.5 text-[10px] font-bold rounded-lg text-slate-500 hover:bg-white/50 transition';
+            }
+        });
+        renderSidebarControlElements();
+    };
+
     window.updateCanvasTitle = function(val) {
         document.getElementById('canvasRenderTitle').innerText = val.trim() || "แผงจำลองภาพรายงานผลสถิติ";
     };
 
-    // 🟢 ฟังก์ชันสำหรับอัปเดตโลโก้แบบเรียลไทม์
     window.updateCanvasLogo = function(val) {
         const frame = document.getElementById('canvasLogoFrame');
         if (val && val.trim() !== '') {
-            frame.innerHTML = `<img src="${val.trim()}" class="h-14 md:h-16 bg-white p-2 rounded-xl shadow object-contain">`;
+            frame.innerHTML = `<img src="${val.trim()}" onerror="this.style.display='none'; this.parentElement.classList.add('hidden');" onload="this.parentElement.classList.remove('hidden');" class="h-14 md:h-16 bg-white p-2 rounded-xl shadow object-contain">`;
             frame.classList.remove('hidden');
         } else {
             frame.innerHTML = '';
+            frame.classList.add('hidden');
         }
     };
 
@@ -460,7 +485,7 @@
                 trigger.innerHTML = `<span class="${t.color} w-3.5 h-3.5 flex items-center justify-center">${t.icon}</span><span class="truncate max-w-[120px] text-slate-700">${text}</span>`;
             }
         } else {
-            trigger.innerHTML = `<span class="text-slate-400">-- เปลี่ยนประเภทกลุ่ม --</span>`;
+            trigger.innerHTML = `<span class="text-slate-400">-- เปลี่ยนประเภท --</span>`;
         }
         document.getElementById('dd_bulk_type').classList.remove('open');
     }
@@ -472,7 +497,7 @@
         if(val) {
             trigger.innerHTML = `<span class="truncate max-w-[120px] text-slate-700">${text}</span>`;
         } else {
-            trigger.innerHTML = `<span class="text-slate-400">-- เปลี่ยนขนาดกลุ่ม --</span>`;
+            trigger.innerHTML = `<span class="text-slate-400">-- เปลี่ยนขนาด --</span>`;
         }
         document.getElementById('dd_bulk_layout').classList.remove('open');
     }
@@ -667,8 +692,11 @@
                      liveWidgetMapping.push({ id: 'w_s2_' + i, source: 'sheet2', index: i, title: h, alias: h, type: 'ignore', layout: {d: 12, t: 12, m: 12}, note: '', baseCalc: 'auto', isOriginal: true, style: null });
                  });
              }
-             renderSidebarControlElements();
-             renderLiveCanvasDashboardSpace();
+             
+             // เลือกแท็บที่มีข้อมูลเป็นหลัก
+             currentSidebarTab = fetchedHeaders1.length > 0 ? 'sheet1' : 'custom';
+             switchSidebarTab(currentSidebarTab);
+             
              buildGlobalFilterUI(liveWidgetMapping);
           } else {
               Swal.fire('ข้อผิดพลาดชีท', json.message, 'error');
@@ -737,8 +765,8 @@
 
         if(changeCount === 0) return Swal.fire('แจ้งเตือน', 'กรุณาติ๊กถูกเลือกอย่างน้อย 1 รายการเพื่อทำ Bulk Action ครับ', 'warning');
         
-        selectBulkType('', '-- เปลี่ยนประเภทกลุ่ม --', null);
-        selectBulkLayout('', '-- เปลี่ยนขนาดกลุ่ม --', null);
+        selectBulkType('', '-- เปลี่ยนประเภท --', null);
+        selectBulkLayout('', '-- เปลี่ยนขนาด --', null);
         document.getElementById('selectAllSidebarChks').checked = false;
         
         renderSidebarControlElements();
@@ -777,6 +805,36 @@
         if(match) { match.compareTargetIndex = parseInt(val); renderLiveCanvasDashboardSpace(); }
     }
 
+    // 🟢 สร้าง Modal เปลี่ยนชื่อหัวข้อ (Alias) เพื่อไม่ให้รก UI Sidebar
+    window.openInlineEditAliasModal = function(id) {
+        let match = liveWidgetMapping.find(m => m.id === id);
+        if(!match) return;
+
+        let currentTitle = match.alias || match.title || '';
+
+        Swal.fire({
+            title: '<div class="text-sm font-black">ตั้งชื่อหัวข้อที่ต้องการแสดงผล</div>',
+            html: '<p class="text-[10px] text-slate-500 font-bold mb-2">* การเปลี่ยนชื่อนี้ จะไม่มีผลกระทบต่อการอ้างอิงฐานข้อมูลใน Sheets</p>',
+            input: 'textarea',
+            inputValue: currentTitle,
+            inputAttributes: {
+                rows: 3,
+                class: 'p-3 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-indigo-500 resize-none leading-relaxed'
+            },
+            customClass: { input: 'mx-auto w-[90%]' },
+            showCancelButton: true,
+            confirmButtonText: 'บันทึกการเปลี่ยนแปลง',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#4f46e5'
+        }).then((res) => {
+            if(res.isConfirmed) {
+                match.alias = res.value.trim();
+                renderSidebarControlElements();
+                renderLiveCanvasDashboardSpace();
+            }
+        });
+    };
+
     function renderSidebarControlElements() {
         const container = document.getElementById('sbWidgetListContainer');
         container.innerHTML = "";
@@ -787,9 +845,25 @@
         let logoUrl = document.getElementById('dashLogoInput').value.trim();
         updateCanvasLogo(logoUrl);
 
-        if(liveWidgetMapping.length === 0) return;
+        if(liveWidgetMapping.length === 0) {
+             container.innerHTML = `<div class="text-center p-8 text-xs font-bold text-slate-400">กรุณากรอกข้อมูลและกดดึงโครงสร้างข้อมูลด้านบน</div>`;
+             return;
+        }
 
-        liveWidgetMapping.forEach((map) => {
+        // 🟢 ระบบกรองเฉพาะแท็บที่เปิดอยู่
+        const filteredMapping = liveWidgetMapping.filter(map => {
+            if (map.type === 'table_wrapper_combined') return false; 
+            if (currentSidebarTab === 'sheet1') return map.source === 'sheet1' && map.type !== 'custom_box' && map.type !== 'spacer';
+            if (currentSidebarTab === 'sheet2') return map.source === 'sheet2' && map.type !== 'custom_box' && map.type !== 'spacer';
+            if (currentSidebarTab === 'custom') return map.source === 'custom' || map.type === 'custom_box' || map.type === 'spacer';
+            return true;
+        });
+
+        if(filteredMapping.length === 0) {
+            container.innerHTML = `<div class="text-center p-8 text-[11px] font-bold text-slate-400 border border-dashed border-slate-200 rounded-xl m-2 bg-white">ไม่มีข้อมูลในหมวดหมู่นี้</div>`;
+        }
+
+        filteredMapping.forEach((map) => {
             if(map.type === 'spacer') {
                 container.innerHTML += `
                 <div class="bg-indigo-50/70 border border-dashed border-indigo-200 p-3 rounded-xl flex items-center justify-between sidebar-widget-item-card" data-sidebar-widget-id="${map.id}">
@@ -801,7 +875,6 @@
                 </div>`;
                 return;
             }
-            if(map.type === 'table_wrapper_combined') return;
 
             const bgClass = map.source === 'sheet1' ? 'border-l-4 border-l-indigo-600' : (map.source === 'sheet2' ? 'border-l-4 border-l-cyan-500' : 'border-l-4 border-l-emerald-500');
             const themeBadge = map.source === 'sheet1' ? 'bg-indigo-50 text-indigo-700' : (map.source === 'sheet2' ? 'bg-cyan-50 text-cyan-700' : 'bg-emerald-50 text-emerald-700');
@@ -872,10 +945,21 @@
                 `;
             }
 
-            // 🟢 เปลี่ยนจาก <input> เป็น <textarea rows="3"> พร้อม style ให้ตัดบรรทัดได้ (wrap word)
+            // 🟢 เปลี่ยนโครงสร้างการแสดงชื่อให้กระชับขึ้น และมีปุ่มดินสอแก้ไข
+            let aliasHtml = '';
+            if(map.type !== 'custom_box' && map.type !== 'spacer') {
+                aliasHtml = `
+                <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-2 mt-2 mb-1.5">
+                    <span class="text-[11px] font-black text-slate-700 truncate flex-1 leading-tight" title="${map.alias || map.title}">${map.alias || map.title}</span>
+                    <button onclick="openInlineEditAliasModal('${map.id}')" class="text-slate-400 hover:text-indigo-600 ml-2 p-1.5 bg-white rounded-md shadow-sm transition border border-slate-100" title="แก้ไขชื่อหัวข้อการแสดงผล">
+                        ${svgs.pencil}
+                    </button>
+                </div>`;
+            }
+
             let elementItemHtml = `
-                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2 sidebar-widget-item-card ${bgClass}" data-sidebar-widget-id="${map.id}">
-                    <div class="flex items-center justify-between mb-1.5">
+                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm sidebar-widget-item-card ${bgClass}" data-sidebar-widget-id="${map.id}">
+                    <div class="flex items-center justify-between mb-1">
                         <div class="flex items-center gap-2">
                              <input type="checkbox" class="sidebar-row-chk accent-indigo-600 rounded w-3.5 h-3.5 cursor-pointer">
                              <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${themeBadge}">${sourceText}</span>
@@ -884,13 +968,13 @@
                             <label class="text-[10px] font-bold text-slate-400 flex items-center gap-1 cursor-pointer">
                                 <input type="checkbox" class="accent-indigo-600 is-filter-chk" data-id="${map.id}" onchange="toggleFilterTargetState('${map.id}', this.checked)" ${map.isFilter?'checked':''}> ตัวกรอง
                             </label>
-                            <button onclick="cloneSidebarWidgetState('${map.id}')" class="text-slate-300 hover:text-indigo-600 p-0.5">${svgs.add}</button>
-                            <button onclick="deleteSidebarWidgetState('${map.id}')" class="text-slate-300 hover:text-rose-600 p-0.5">${svgs.trash}</button>
+                            <button onclick="cloneSidebarWidgetState('${map.id}')" class="text-slate-300 hover:text-indigo-600 p-0.5" title="ทำซ้ำ">${svgs.add}</button>
+                            <button onclick="deleteSidebarWidgetState('${map.id}')" class="text-slate-300 hover:text-rose-600 p-0.5" title="ลบ/ซ่อน">${svgs.trash}</button>
                         </div>
                     </div>
-                    ${map.type !== 'custom_box' ? `<textarea rows="3" onblur="updateWidgetAliasName('${map.id}', this.value)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-slate-700 focus:bg-white outline-none resize-y leading-relaxed" style="word-break: break-word; white-space: pre-wrap;" title="เปลี่ยนหัวข้อเฉพาะหน้าแสดงผล">${map.alias || map.title}</textarea>` : ''}
-                    <div class="grid grid-cols-2 gap-1.5 text-xs relative">
-                        ${map.type !== 'custom_box' ? customDropdownHtml : '<div class="text-[10px] font-bold text-emerald-600 flex items-center justify-center bg-emerald-50 px-2 rounded-lg border border-emerald-100 shadow-sm"><span class="w-3.5 h-3.5 mr-1 flex items-center justify-center">'+svgs.users+'</span> ข้อมูลกำหนดเอง</div>'}
+                    ${aliasHtml}
+                    <div class="grid grid-cols-2 gap-1.5 text-xs relative mt-2">
+                        ${map.type !== 'custom_box' ? customDropdownHtml : '<div class="text-[10px] font-bold text-emerald-600 flex items-center justify-center bg-emerald-50 px-2 rounded-lg border border-emerald-100 shadow-sm"><span class="w-3.5 h-3.5 mr-1 flex items-center justify-center">'+svgs.users+'</span> ข้อมูลทำมือ</div>'}
                         <input type="text" value="${map.note || ''}" onblur="updateWidgetNoteText('${map.id}', this.value)" placeholder="ระบุ Note / ลิงก์ปุ่ม (ถ้ามี)" class="p-2 border border-slate-200 bg-white rounded-lg outline-none text-[11px]">
                     </div>
                     ${extraOptionsHtml}
@@ -924,7 +1008,6 @@
         renderLiveCanvasDashboardSpace(); 
     }
     
-    function updateWidgetAliasName(id, val) { if(val.trim()){ liveWidgetMapping.find(m => m.id === id).alias = val.trim(); renderLiveCanvasDashboardSpace(); } }
     function updateWidgetNoteText(id, val) { liveWidgetMapping.find(m => m.id === id).note = val.trim(); renderLiveCanvasDashboardSpace(); }
     function updateWidgetSpacerCustomText(id, val) { liveWidgetMapping.find(m => m.id === id).customText = val.trim(); renderLiveCanvasDashboardSpace(); }
     
@@ -1057,9 +1140,12 @@
 
         Swal.fire({
             title: '<div class="text-sm font-black">เปลี่ยนชื่อหัวข้อการ์ด</div>',
-            input: 'text',
+            input: 'textarea',
             inputValue: currentTitle,
-            inputAttributes: { class: 'p-3 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-indigo-500' },
+            inputAttributes: {
+                rows: 3,
+                class: 'p-3 rounded-xl border border-slate-200 text-sm font-bold w-full outline-none focus:border-indigo-500 resize-none leading-relaxed'
+            },
             customClass: { input: 'mx-auto w-[90%]' },
             showCancelButton: true,
             confirmButtonText: 'บันทึก',
@@ -1080,7 +1166,7 @@
         });
     };
 
-    // --- 🟢 ฟังก์ชันสำหรับการเรนเดอร์กราฟ ECharts (คำนวณความสูงและป้องกันการซ้อนทับ) ---
+    // --- 🟢 ฟังก์ชันสำหรับการเรนเดอร์กราฟ ECharts ---
     function initEChartsWidgets(chartQueue) {
         chartQueue.forEach(item => {
             let dom = document.getElementById(item.id);
@@ -1088,20 +1174,18 @@
 
             // 1. ปรับสมการความสูง (Dynamic Height Adjustment)
             if (item.type === 'chart_bar_h') {
-                // กราฟแท่งแนวนอน: ยืดความสูงตามจำนวนบรรทัด ป้องกันแท่งแบนติดกัน
-                let neededHeight = item.data.length * 40 + 100; // แท่งละ 40px + ขอบล่าง/บน
+                let neededHeight = item.data.length * 40 + 100;
                 if (neededHeight > 350) dom.style.height = neededHeight + 'px';
                 else dom.style.height = '350px';
             }
             else if (item.type === 'chart_pie') {
-                // กราฟวงกลม: คำนวณความสูงตามจำนวนป้าย Legend 
-                let legendRows = Math.ceil(item.data.length / 2); // ตีซะว่าบรรทัดละ 2 หัวข้อ
-                let displayRows = Math.min(legendRows, 6); // ล็อกสูงสุด 6 บรรทัด
-                let extraHeight = item.showLegend ? (displayRows * 28 + 60) : 0; // 🟢 เพิ่มช่องว่างให้แถบ Legend ยิ่งขึ้น
-                dom.style.height = (350 + extraHeight) + 'px'; // 🟢 เพิ่มความสูงตั้งต้นเพื่อไม่ให้กราฟไปชนแถบ
+                let legendRows = Math.ceil(item.data.length / 2); 
+                let displayRows = Math.min(legendRows, 6); 
+                let extraHeight = item.showLegend ? (displayRows * 28 + 60) : 0; 
+                dom.style.height = (350 + extraHeight) + 'px'; 
             }
             else {
-                dom.style.height = '350px'; // กราฟแท่งแนวตั้งความสูงมาตรฐาน
+                dom.style.height = '350px'; 
             }
 
             let existingChart = echarts.getInstanceByDom(dom);
@@ -1121,17 +1205,17 @@
                     },
                     legend: {
                         show: item.showLegend,
-                        type: 'scroll', // 🟢 เพิ่มปุ่มเลื่อนอัตโนมัติเมื่อหัวข้อเกินที่กำหนด
+                        type: 'scroll',
                         orient: 'horizontal',
-                        bottom: '2%',   // 🟢 ย้าย Legend มาวางชิดขอบล่างสุด และเว้นช่องว่างนิดหน่อย
+                        bottom: '2%',   
                         left: 'center',
                         icon: 'circle',
-                        padding: [20, 10, 0, 10], // 🟢 เว้นระยะห่างด้านบนของ Legend จากตัวกราฟให้มากขึ้น
+                        padding: [20, 10, 0, 10], 
                         textStyle: {
                             color: item.cText,
                             fontFamily: 'Google Sans, Noto Sans Thai',
                             fontWeight: 'bold',
-                            width: 200, // 🟢 จำกัดความกว้างชื่อหมวดหมู่
+                            width: 200, 
                             overflow: 'truncate'  
                         },
                         pageIconColor: item.cAccent,
@@ -1139,15 +1223,14 @@
                     },
                     series: [{
                         type: 'pie',
-                        radius: ['30%', '45%'], // 🟢 ย่อรัศมีกราฟลงเพื่อให้เหลือพื้นที่ให้เส้นชี้ Label ได้วางตัวอย่างอิสระ
-                        center: ['50%', item.showLegend ? '40%' : '50%'], // 🟢 ดันตัววงกลมขึ้นไปด้านบนที่ 40% หากเปิด Legend ด้านล่าง
+                        radius: ['30%', '45%'], 
+                        center: ['50%', item.showLegend ? '40%' : '50%'], 
                         avoidLabelOverlap: true,
                         itemStyle: { borderRadius: 5, borderColor: item.cBg, borderWidth: 2 },
                         label: {
                             show: true,
                             formatter: function (params) {
                                 let pct = item.total > 0 ? ((params.value / item.total) * 100).toFixed(1) : 0;
-                                // 🟢 ตรรกะซ่อนชื่อบนเส้นชี้ถ้าเปิด Legend ด้านล่างไว้แล้ว เพื่อลดความซ้ำซ้อน
                                 if (item.showLegend) {
                                     return `{val|${params.value} คน}\n{pct|${pct}%}`;
                                 } else {
@@ -1161,7 +1244,6 @@
                                 pct: { fontSize: 10, color: item.cSub, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' }
                             }
                         },
-                        // 🟢 ปรับลดความยาวเส้นชี้ เพื่อไม่ให้ลากไปโดนขอบล่าง
                         labelLine: { show: true, length: 10, length2: 15, smooth: true, lineStyle: { width: 1.5 } },
                         data: pieData
                     }]
@@ -1183,7 +1265,7 @@
                             fontWeight: 'bold',
                             fontFamily: 'Google Sans, Noto Sans Thai',
                             width: 250, 
-                            overflow: 'break' // 🟢 ปัดขึ้นบรรทัดใหม่ ห้ามใช้ ... ตัดคำ
+                            overflow: 'break' 
                         },
                         axisLine: { show: false },
                         axisTick: { show: false }
@@ -1195,7 +1277,7 @@
                         barMaxWidth: 40,
                         label: {
                             show: true,
-                            position: 'right', // ตัวอักษรวางด้านขวานอกแท่ง
+                            position: 'right', 
                             formatter: function (params) {
                                 let pct = item.total > 0 ? ((params.value / item.total) * 100).toFixed(2) : 0;
                                 return `{val|${params.value} คน}  {pct|คิดเป็น ${pct}%}`;
@@ -1230,7 +1312,7 @@
                             fontFamily: 'Google Sans, Noto Sans Thai',
                             interval: 0,
                             width: 80, 
-                            overflow: 'break' // 🟢 ปัดขึ้นบรรทัดใหม่ถ้ายาวเกิน
+                            overflow: 'break' 
                         },
                         axisLine: { show: false }, axisTick: { show: false }
                     },
@@ -1567,9 +1649,9 @@
 
     function injectSpacerTextBlockWidget() {
         let randId = 'sp_node_' + Math.random().toString(36).substr(2, 4);
-        liveWidgetMapping.push({ id: randId, type: 'spacer', layout: {d:12, t:12, m:12}, isFilter: false, customText: '', baseCalc: 'auto', isOriginal: false, style: null });
-        renderSidebarControlElements();
-        renderLiveCanvasDashboardSpace();
+        liveWidgetMapping.push({ id: randId, source: 'custom', type: 'spacer', layout: {d:12, t:12, m:12}, isFilter: false, customText: '', baseCalc: 'auto', isOriginal: false, style: null });
+        currentSidebarTab = 'custom';
+        switchSidebarTab('custom');
     }
     
     function injectCustomDataBoxWidget() {
@@ -1579,8 +1661,8 @@
             title: 'ข้อมูลกำหนดเอง', alias: 'ข้อมูลกำหนดเอง', isFilter: false, baseCalc: 'auto', isOriginal: false, style: null,
             customData: { title: 'หัวข้อข้อมูล (Title)', value: '100', unit: 'หน่วย', subtext: 'ข้อความรอง (Subtext)' }
         });
-        renderSidebarControlElements();
-        renderLiveCanvasDashboardSpace();
+        currentSidebarTab = 'custom';
+        switchSidebarTab('custom');
     }
 
     function openDynamicDataColumnSelectorModal() {
@@ -1614,8 +1696,9 @@
                     source: src, index: idx, title: title, alias: title,
                     type: selectedType, layout: {d: newL, t: (newL===3?6:newL), m: 12}, note: '', baseCalc: 'auto', isFilter: false, isOriginal: false, style: null
                 });
-                renderSidebarControlElements();
-                renderLiveCanvasDashboardSpace();
+                
+                currentSidebarTab = src;
+                switchSidebarTab(src);
             }
         });
     }
