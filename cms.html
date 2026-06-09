@@ -163,8 +163,8 @@
         </div>
 
         <div class="p-4 border-b border-slate-100 bg-white space-y-3 shadow-sm z-10">
-            <input type="text" id="dashTitleInput" placeholder="ระบุชื่อหัวข้อแดชบอร์ด *" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:border-indigo-500 focus:bg-white transition">
-            <input type="text" id="dashLogoInput" placeholder="ลิงก์รูปโลโก้รายงาน (ถ้ามี)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 focus:bg-white transition">
+            <input type="text" id="dashTitleInput" oninput="updateCanvasTitle(this.value)" placeholder="ระบุชื่อหัวข้อแดชบอร์ด *" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:border-indigo-500 focus:bg-white transition">
+            <input type="text" id="dashLogoInput" oninput="updateCanvasLogo(this.value)" placeholder="ลิงก์รูปโลโก้รายงาน (ถ้ามี)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 focus:bg-white transition">
             <div class="grid grid-cols-12 gap-2">
                 <input type="text" id="sheetIdInput" placeholder="Google Spreadsheet ID *" class="col-span-8 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 focus:bg-white transition">
                 <button onclick="fetchHeaders()" class="col-span-4 bg-slate-800 text-white font-black text-xs rounded-xl hover:bg-slate-700 transition">ดึงข้อมูล</button>
@@ -384,6 +384,22 @@
     const currentUserEmail = localStorage.getItem('user_email');
     const currentUserName = localStorage.getItem('user_name') || currentUserEmail;
 
+    // 🟢 ฟังก์ชันสำหรับอัปเดตชื่อโปรเจกต์แบบเรียลไทม์
+    window.updateCanvasTitle = function(val) {
+        document.getElementById('canvasRenderTitle').innerText = val.trim() || "แผงจำลองภาพรายงานผลสถิติ";
+    };
+
+    // 🟢 ฟังก์ชันสำหรับอัปเดตโลโก้แบบเรียลไทม์
+    window.updateCanvasLogo = function(val) {
+        const frame = document.getElementById('canvasLogoFrame');
+        if (val && val.trim() !== '') {
+            frame.innerHTML = `<img src="${val.trim()}" class="h-14 md:h-16 bg-white p-2 rounded-xl shadow object-contain">`;
+            frame.classList.remove('hidden');
+        } else {
+            frame.innerHTML = '';
+        }
+    };
+
     async function apiCall(payload) {
       try {
         const response = await fetch(SCRIPT_URL, {
@@ -543,6 +559,7 @@
         document.getElementById('sheet2Input').value = '';
         document.getElementById('sbWidgetListContainer').innerHTML = `<div class="text-center p-8 text-xs font-bold text-slate-400">กรุณากรอกข้อมูลและกดดึงโครงสร้างข้อมูลด้านบน</div>`;
         document.getElementById('liveCanvasGridContainer').innerHTML = '';
+        updateCanvasLogo('');
     }
 
     function logout() {
@@ -587,6 +604,10 @@
             editingProjectId = id; const cfg = json.config;
             document.getElementById('dashTitleInput').value = json.projectName;
             document.getElementById('dashLogoInput').value = json.logoUrl || '';
+            
+            updateCanvasTitle(json.projectName);
+            updateCanvasLogo(json.logoUrl || '');
+
             document.getElementById('sheetIdInput').value = cfg.spreadsheetId;
             document.getElementById('sheet1Input').value = cfg.sheet1Name;
             document.getElementById('sheet2Input').value = cfg.sheet2Name || '';
@@ -689,7 +710,7 @@
                         match.type = typeVal;
                         let newL = 12;
                         if(typeVal === 'kpi_total' || typeVal === 'kpi_percent') newL = 3;
-                        else if(typeVal === 'average' || typeVal === 'kpi_compare') newL = 6;
+                        else if(typeVal === 'average' || typeVal === 'kpi_compare' || typeVal === 'chart_pie') newL = 6;
                         if (typeof match.layout === 'number') match.layout = {d: match.layout, t: match.layout, m: match.layout};
                         
                         match.layout = { d: newL, t: (newL===3?6:newL), m: 12 }; 
@@ -762,6 +783,9 @@
         
         let titleNode = document.getElementById('dashTitleInput').value.trim() || "แผงจำลองภาพรายงานผลสถิติ";
         document.getElementById('canvasRenderTitle').innerText = titleNode;
+        
+        let logoUrl = document.getElementById('dashLogoInput').value.trim();
+        updateCanvasLogo(logoUrl);
 
         if(liveWidgetMapping.length === 0) return;
 
@@ -848,7 +872,7 @@
                 `;
             }
 
-            // 🟢 เปลี่ยน <input> เป็น <textarea> เพื่อให้ข้อความยาวๆ สามารถขึ้นบรรทัดใหม่ได้ (แก้ปัญหาตัดคำใน Sidebar)
+            // 🟢 เปลี่ยนจาก <input> เป็น <textarea rows="3"> พร้อม style ให้ตัดบรรทัดได้ (wrap word)
             let elementItemHtml = `
                 <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2 sidebar-widget-item-card ${bgClass}" data-sidebar-widget-id="${map.id}">
                     <div class="flex items-center justify-between mb-1.5">
@@ -864,7 +888,7 @@
                             <button onclick="deleteSidebarWidgetState('${map.id}')" class="text-slate-300 hover:text-rose-600 p-0.5">${svgs.trash}</button>
                         </div>
                     </div>
-                    ${map.type !== 'custom_box' ? `<textarea rows="2" onblur="updateWidgetAliasName('${map.id}', this.value)" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-100 rounded font-bold text-xs text-slate-700 focus:bg-white outline-none resize-none leading-relaxed" title="เปลี่ยนหัวข้อเฉพาะหน้าแสดงผล">${map.alias || map.title}</textarea>` : ''}
+                    ${map.type !== 'custom_box' ? `<textarea rows="3" onblur="updateWidgetAliasName('${map.id}', this.value)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-slate-700 focus:bg-white outline-none resize-y leading-relaxed" style="word-break: break-word; white-space: pre-wrap;" title="เปลี่ยนหัวข้อเฉพาะหน้าแสดงผล">${map.alias || map.title}</textarea>` : ''}
                     <div class="grid grid-cols-2 gap-1.5 text-xs relative">
                         ${map.type !== 'custom_box' ? customDropdownHtml : '<div class="text-[10px] font-bold text-emerald-600 flex items-center justify-center bg-emerald-50 px-2 rounded-lg border border-emerald-100 shadow-sm"><span class="w-3.5 h-3.5 mr-1 flex items-center justify-center">'+svgs.users+'</span> ข้อมูลกำหนดเอง</div>'}
                         <input type="text" value="${map.note || ''}" onblur="updateWidgetNoteText('${map.id}', this.value)" placeholder="ระบุ Note / ลิงก์ปุ่ม (ถ้ามี)" class="p-2 border border-slate-200 bg-white rounded-lg outline-none text-[11px]">
@@ -1073,8 +1097,8 @@
                 // กราฟวงกลม: คำนวณความสูงตามจำนวนป้าย Legend 
                 let legendRows = Math.ceil(item.data.length / 2); // ตีซะว่าบรรทัดละ 2 หัวข้อ
                 let displayRows = Math.min(legendRows, 6); // ล็อกสูงสุด 6 บรรทัด
-                let extraHeight = item.showLegend ? (displayRows * 28 + 40) : 0; // เพิ่มความสูงให้โซน Legend ด้านล่าง
-                dom.style.height = (320 + extraHeight) + 'px'; // 320 คือความสูงตั้งต้นของตัววงกลม
+                let extraHeight = item.showLegend ? (displayRows * 28 + 60) : 0; // 🟢 เพิ่มช่องว่างให้แถบ Legend ยิ่งขึ้น
+                dom.style.height = (350 + extraHeight) + 'px'; // 🟢 เพิ่มความสูงตั้งต้นเพื่อไม่ให้กราฟไปชนแถบ
             }
             else {
                 dom.style.height = '350px'; // กราฟแท่งแนวตั้งความสูงมาตรฐาน
@@ -1097,17 +1121,17 @@
                     },
                     legend: {
                         show: item.showLegend,
-                        type: 'scroll', // 🟢 เพิ่มปุ่มเลื่อนอัตโนมัติเมื่อหัวข้อเกิน 6 แถว
+                        type: 'scroll', // 🟢 เพิ่มปุ่มเลื่อนอัตโนมัติเมื่อหัวข้อเกินที่กำหนด
                         orient: 'horizontal',
-                        bottom: '0%',   // 🟢 ย้าย Legend มาวางชิดขอบล่างสุด
+                        bottom: '2%',   // 🟢 ย้าย Legend มาวางชิดขอบล่างสุด และเว้นช่องว่างนิดหน่อย
                         left: 'center',
                         icon: 'circle',
-                        height: 168, // ล็อกความสูงโซน Legend (28px * 6 แถว) 
+                        padding: [20, 10, 0, 10], // 🟢 เว้นระยะห่างด้านบนของ Legend จากตัวกราฟให้มากขึ้น
                         textStyle: {
                             color: item.cText,
                             fontFamily: 'Google Sans, Noto Sans Thai',
                             fontWeight: 'bold',
-                            width: 250,           
+                            width: 200, // 🟢 จำกัดความกว้างชื่อหมวดหมู่
                             overflow: 'truncate'  
                         },
                         pageIconColor: item.cAccent,
@@ -1115,15 +1139,15 @@
                     },
                     series: [{
                         type: 'pie',
-                        radius: ['30%', '55%'], // ย่อรัศมีกราฟลงนิดหน่อยให้เหลือพื้นที่
-                        center: ['50%', item.showLegend ? '40%' : '50%'], // 🟢 ดันวงกลมขึ้นไปด้านบนที่ 40% ถ้าเปิด Legend
+                        radius: ['30%', '45%'], // 🟢 ย่อรัศมีกราฟลงเพื่อให้เหลือพื้นที่ให้เส้นชี้ Label ได้วางตัวอย่างอิสระ
+                        center: ['50%', item.showLegend ? '40%' : '50%'], // 🟢 ดันตัววงกลมขึ้นไปด้านบนที่ 40% หากเปิด Legend ด้านล่าง
                         avoidLabelOverlap: true,
                         itemStyle: { borderRadius: 5, borderColor: item.cBg, borderWidth: 2 },
                         label: {
                             show: true,
                             formatter: function (params) {
                                 let pct = item.total > 0 ? ((params.value / item.total) * 100).toFixed(1) : 0;
-                                // 🟢 ตรรกะซ่อนชื่อบนเส้นชี้ถ้าเปิด Legend ด้านล่างไว้แล้ว
+                                // 🟢 ตรรกะซ่อนชื่อบนเส้นชี้ถ้าเปิด Legend ด้านล่างไว้แล้ว เพื่อลดความซ้ำซ้อน
                                 if (item.showLegend) {
                                     return `{val|${params.value} คน}\n{pct|${pct}%}`;
                                 } else {
@@ -1137,7 +1161,8 @@
                                 pct: { fontSize: 10, color: item.cSub, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' }
                             }
                         },
-                        labelLine: { show: true, length: 15, length2: 20, smooth: true, lineStyle: { width: 2 } },
+                        // 🟢 ปรับลดความยาวเส้นชี้ เพื่อไม่ให้ลากไปโดนขอบล่าง
+                        labelLine: { show: true, length: 10, length2: 15, smooth: true, lineStyle: { width: 1.5 } },
                         data: pieData
                     }]
                 };
@@ -1148,7 +1173,6 @@
                 option = {
                     color: [chartColorPalette[0]],
                     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, textStyle: { fontFamily: 'Google Sans, Noto Sans Thai' } },
-                    // 🟢 เพิ่ม right margin ให้กว้างขึ้นเพื่อรองรับข้อความ % ท้ายกราฟ
                     grid: { left: '3%', right: '15%', bottom: '3%', top: '5%', containLabel: true },
                     xAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed', color: item.cSub + '33' } }, axisLabel: { color: item.cSub, fontFamily: 'Google Sans, Noto Sans Thai' } },
                     yAxis: {
@@ -1158,7 +1182,7 @@
                             color: item.cText,
                             fontWeight: 'bold',
                             fontFamily: 'Google Sans, Noto Sans Thai',
-                            width: 250, // จำกัดความกว้างชื่อหมวดหมู่
+                            width: 250, 
                             overflow: 'break' // 🟢 ปัดขึ้นบรรทัดใหม่ ห้ามใช้ ... ตัดคำ
                         },
                         axisLine: { show: false },
@@ -1381,6 +1405,7 @@
                 data.forEach(r => { let val = String(r[m.index] || "").trim(); if(val && val !== "-") { validTotal++; if (m.type === 'multi_choice') val.split(/,\s*/).forEach(x => { if(x) counts[x] = (counts[x]||0)+1; }); else counts[val] = (counts[val]||0)+1; } });
                 
                 let denominator = totalBaseForPct > 0 ? totalBaseForPct : validTotal;
+                
                 let sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
                 let tbody = sorted.map(it => { let p = denominator > 0 ? ((it[1]*100)/denominator).toFixed(2) : "0.00"; return `<tr class="hover:bg-black/5 transition" style="border-bottom: 1px solid ${cSub}33;"><td class="p-3 font-medium text-xs leading-tight" style="color: ${cText};">${it[0]}</td><td class="p-3 text-right font-black text-xs w-20" style="color: ${cText};">${it[1].toLocaleString()}</td><td class="p-3 text-right font-black text-xs w-20" style="color: ${cAccent}; background-color: ${cAccent}1A;">${p}%</td></tr>`; }).join('');
                 innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><h3 class="font-black text-sm mb-4 flex items-center gap-2"><span style="color: ${cAccent};" class="w-5 h-5 flex">${svgs.pieAlt}</span> <span class="leading-tight flex-1" style="color: ${cText};">${dispHeaderTitle}</span></h3><div class="overflow-x-auto rounded-xl shadow-inner flex-1" style="border: 1px solid ${cSub}33;"><table class="w-full text-xs text-left border-collapse"><thead class="font-bold text-[10px]" style="color: ${cSub}; border-bottom: 1px solid ${cSub}33; background-color: ${cSub}1A;"><tr><th class="p-2.5">รายการ</th><th class="p-2.5 text-right">จำนวน</th><th class="p-2.5 text-right">ร้อยละ</th></tr></thead><tbody style="background-color: transparent;">${tbody || `<tr><td colspan="3" class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีข้อมูล</td></tr>`}</tbody></table></div>${noteHtml}</div>`;
