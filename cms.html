@@ -22,7 +22,6 @@
   
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <!-- เพิ่ม Apache ECharts สำหรับกราฟขั้นสูง -->
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -60,7 +59,6 @@
     .live-widget-box:active { cursor: grabbing; }
     .sortable-ghost { opacity: 0.3; background: #eef2ff; border: 2px dashed #4f46e5; }
     
-    /* Responsive Table Settings */
     .resizable-table { table-layout: fixed; border-collapse: collapse; width: 100%; }
     .table-auto-scroll { min-width: 800px; } 
     th { position: relative; } 
@@ -70,7 +68,6 @@
     .preview-tablet { width: 100%; max-width: 820px; background-color: #ffffff; border-radius: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); margin-top: 2rem; margin-bottom: 2rem; border: 8px solid #cbd5e1; }
     .preview-mobile { width: 100%; max-width: 414px; background-color: #ffffff; border-radius: 3rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); margin-top: 2rem; margin-bottom: 2rem; border: 12px solid #1e293b; }
 
-    /* ECharts Responsive Fix - ความสูงถูกปรับผ่าน JS อัตโนมัติ */
     .echart-container { width: 100%; }
 
     @media print {
@@ -83,7 +80,6 @@
       .live-widget-box:hover { outline: none !important; }
       .overflow-y-auto, .overflow-x-auto { overflow: visible !important; max-height: none !important; height: auto !important; }
       .glass-card, tr, .col-span-12, .md\:col-span-6, .md\:col-span-4, .md\:col-span-3, .lg\:col-span-6, .lg\:col-span-4, .lg\:col-span-3 { break-inside: avoid; page-break-inside: avoid; }
-      /* Ensure charts don't break across pages */
       .echart-container { break-inside: avoid; page-break-inside: avoid; }
     }
   </style>
@@ -154,7 +150,6 @@
   </div>
 
   <div id="cmsSplitEditorZone" class="app-split-container hidden no-print">
-    
     <aside class="sidebar-editor">
         <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
             <div class="flex items-center gap-3">
@@ -196,9 +191,7 @@
                                  <span class="text-slate-400" id="dd_bulk_type_arrow"></span>
                              </div>
                              <div class="custom-options" id="bulk_type_options">
-                                 <div class="custom-option" onclick="selectBulkType('', '-- เปลี่ยนประเภทกลุ่ม --', event)">
-                                    <span class="text-slate-400">-- ไม่เปลี่ยน --</span>
-                                 </div>
+                                 <div class="custom-option" onclick="selectBulkType('', '-- เปลี่ยนประเภทกลุ่ม --', event)"><span class="text-slate-400">-- ไม่เปลี่ยน --</span></div>
                              </div>
                          </div>
                      </div>
@@ -289,7 +282,6 @@
   </div>
 
   <script>
-    // ไอคอน SVG ต่างๆ
     const svgs = {
         layerPlus: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>`,
         user: `<svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>`,
@@ -347,7 +339,6 @@
         { val: 'text_list', text: 'รายการข้อเสนอแนะ', icon: svgs.comment, color: 'text-slate-500' }
     ];
 
-    // ชุดสีพาสเทลสวยงามสำหรับกราฟ
     const chartColorPalette = ['#7ce0e6', '#5ab4d1', '#4182a4', '#41598f', '#855196', '#be4880', '#ed5d72', '#ff8469', '#ffad5c', '#fada5e', '#a8e64c'];
 
     document.getElementById('hdrLogoIcon').innerHTML = svgs.layerPlus;
@@ -366,7 +357,6 @@
     document.getElementById('iconMobile').innerHTML = svgs.deviceMobile;
     document.getElementById('btnPlusSvg').innerHTML = svgs.add;
     
-    // Setup initial Bulk Type Options dynamically
     document.getElementById('dd_bulk_type_arrow').innerHTML = svgs.angleDown;
     document.getElementById('dd_bulk_layout_arrow').innerHTML = svgs.angleDown;
     const bulkTypeOptionsContainer = document.getElementById('bulk_type_options');
@@ -389,7 +379,7 @@
     let liveWidgetMapping = []; 
     let activeWidgetContextEl = null;
     
-    window.currentPreviewDevice = 'desktop'; // State for active viewport
+    window.currentPreviewDevice = 'desktop';
 
     const currentUserEmail = localStorage.getItem('user_email');
     const currentUserName = localStorage.getItem('user_name') || currentUserEmail;
@@ -426,10 +416,6 @@
             fetchMyProjects();
         }
     }
-
-    // -------------------------------------------------------------
-    //  Core Application Functions
-    // -------------------------------------------------------------
 
     function getIsOriginal(m) {
         if (m.isOriginal !== undefined) return m.isOriginal;
@@ -836,14 +822,13 @@
                 `;
             }
 
-            // เพิ่ม Toggle สำหรับเปิด/ปิด Legend เฉพาะตัวกราฟ
             if (['chart_pie', 'chart_bar_h', 'chart_bar_v'].includes(map.type)) {
-                let isLegendOn = map.showLegend !== false; // ค่าตั้งต้นคือเปิดเสมอ
+                let isLegendOn = map.showLegend !== false; 
                 extraOptionsHtml += `
                     <div class="mt-1.5 p-2 bg-slate-50 rounded-lg border border-slate-200">
                         <label class="text-[10px] font-bold text-slate-600 flex items-center gap-1.5 cursor-pointer">
                             <input type="checkbox" onchange="updateWidgetLegendToggle('${map.id}', this.checked)" class="accent-indigo-600 rounded w-3 h-3" ${isLegendOn ? 'checked' : ''}> 
-                            แสดงแถบสัญลักษณ์ (Legend)
+                            แสดงแถบสัญลักษณ์ (Legend) ด้านล่าง
                         </label>
                         ${map.type === 'chart_pie' ? `<div class="text-[9px] text-slate-400 mt-1 pl-4">* หากเปิด Legend ชื่อบนเส้นชี้จะถูกซ่อนเพื่อลดความซ้ำซ้อน</div>` : ''}
                     </div>
@@ -863,9 +848,10 @@
                 `;
             }
 
+            // 🟢 เปลี่ยน <input> เป็น <textarea> เพื่อให้ข้อความยาวๆ สามารถขึ้นบรรทัดใหม่ได้ (แก้ปัญหาตัดคำใน Sidebar)
             let elementItemHtml = `
                 <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2 sidebar-widget-item-card ${bgClass}" data-sidebar-widget-id="${map.id}">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between mb-1.5">
                         <div class="flex items-center gap-2">
                              <input type="checkbox" class="sidebar-row-chk accent-indigo-600 rounded w-3.5 h-3.5 cursor-pointer">
                              <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${themeBadge}">${sourceText}</span>
@@ -878,7 +864,7 @@
                             <button onclick="deleteSidebarWidgetState('${map.id}')" class="text-slate-300 hover:text-rose-600 p-0.5">${svgs.trash}</button>
                         </div>
                     </div>
-                    ${map.type !== 'custom_box' ? `<input type="text" value="${map.alias || map.title}" onblur="updateWidgetAliasName('${map.id}', this.value)" class="w-full px-2 py-1 bg-slate-50 border border-slate-100 rounded font-bold text-xs text-slate-700 focus:bg-white outline-none" title="เปลี่ยนหัวข้อเฉพาะหน้าแสดงผล">` : ''}
+                    ${map.type !== 'custom_box' ? `<textarea rows="2" onblur="updateWidgetAliasName('${map.id}', this.value)" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-100 rounded font-bold text-xs text-slate-700 focus:bg-white outline-none resize-none leading-relaxed" title="เปลี่ยนหัวข้อเฉพาะหน้าแสดงผล">${map.alias || map.title}</textarea>` : ''}
                     <div class="grid grid-cols-2 gap-1.5 text-xs relative">
                         ${map.type !== 'custom_box' ? customDropdownHtml : '<div class="text-[10px] font-bold text-emerald-600 flex items-center justify-center bg-emerald-50 px-2 rounded-lg border border-emerald-100 shadow-sm"><span class="w-3.5 h-3.5 mr-1 flex items-center justify-center">'+svgs.users+'</span> ข้อมูลกำหนดเอง</div>'}
                         <input type="text" value="${map.note || ''}" onblur="updateWidgetNoteText('${map.id}', this.value)" placeholder="ระบุ Note / ลิงก์ปุ่ม (ถ้ามี)" class="p-2 border border-slate-200 bg-white rounded-lg outline-none text-[11px]">
@@ -1070,25 +1056,28 @@
         });
     };
 
-    // --- ฟังก์ชันสำหรับการเรนเดอร์กราฟ ECharts ---
+    // --- 🟢 ฟังก์ชันสำหรับการเรนเดอร์กราฟ ECharts (คำนวณความสูงและป้องกันการซ้อนทับ) ---
     function initEChartsWidgets(chartQueue) {
         chartQueue.forEach(item => {
             let dom = document.getElementById(item.id);
             if (!dom) return;
 
-            // --- 1. Dynamic Height Adjustment ---
-            // For H-Bar: Expand height based on number of rows to prevent squished bars
+            // 1. ปรับสมการความสูง (Dynamic Height Adjustment)
             if (item.type === 'chart_bar_h') {
-                let neededHeight = item.data.length * 50 + 100; // 50px per bar + margins
+                // กราฟแท่งแนวนอน: ยืดความสูงตามจำนวนบรรทัด ป้องกันแท่งแบนติดกัน
+                let neededHeight = item.data.length * 40 + 100; // แท่งละ 40px + ขอบล่าง/บน
                 if (neededHeight > 350) dom.style.height = neededHeight + 'px';
                 else dom.style.height = '350px';
             }
-            // For Pie: Give it a solid default height so legend has room
             else if (item.type === 'chart_pie') {
-                dom.style.height = '420px'; // Increased height
+                // กราฟวงกลม: คำนวณความสูงตามจำนวนป้าย Legend 
+                let legendRows = Math.ceil(item.data.length / 2); // ตีซะว่าบรรทัดละ 2 หัวข้อ
+                let displayRows = Math.min(legendRows, 6); // ล็อกสูงสุด 6 บรรทัด
+                let extraHeight = item.showLegend ? (displayRows * 28 + 40) : 0; // เพิ่มความสูงให้โซน Legend ด้านล่าง
+                dom.style.height = (320 + extraHeight) + 'px'; // 320 คือความสูงตั้งต้นของตัววงกลม
             }
             else {
-                dom.style.height = '350px'; // Default for V-bar
+                dom.style.height = '350px'; // กราฟแท่งแนวตั้งความสูงมาตรฐาน
             }
 
             let existingChart = echarts.getInstanceByDom(dom);
@@ -1104,37 +1093,37 @@
                     tooltip: {
                         trigger: 'item',
                         textStyle: { fontFamily: 'Google Sans, Noto Sans Thai' },
-                        formatter: '<b>{b}</b><br/>{c} คน ({d}%)' // Tooltip shows full details
+                        formatter: '<b>{b}</b><br/>{c} คน ({d}%)'
                     },
                     legend: {
                         show: item.showLegend,
-                        type: 'scroll', // 🟢 Make legend scrollable
+                        type: 'scroll', // 🟢 เพิ่มปุ่มเลื่อนอัตโนมัติเมื่อหัวข้อเกิน 6 แถว
                         orient: 'horizontal',
-                        bottom: '0%',   // 🟢 Put legend at bottom
+                        bottom: '0%',   // 🟢 ย้าย Legend มาวางชิดขอบล่างสุด
                         left: 'center',
                         icon: 'circle',
-                        padding: [15, 10, 0, 10], // Space from pie
+                        height: 168, // ล็อกความสูงโซน Legend (28px * 6 แถว) 
                         textStyle: {
                             color: item.cText,
                             fontFamily: 'Google Sans, Noto Sans Thai',
                             fontWeight: 'bold',
-                            width: 250,            // Limit width
-                            overflow: 'truncate'   // Truncate long legends so they don't break layout
+                            width: 250,           
+                            overflow: 'truncate'  
                         },
                         pageIconColor: item.cAccent,
                         pageTextStyle: { color: item.cText }
                     },
                     series: [{
                         type: 'pie',
-                        radius: ['35%', '60%'], // 🟢 Slightly smaller radius
-                        center: ['50%', '42%'], // 🟢 Shift center up
+                        radius: ['30%', '55%'], // ย่อรัศมีกราฟลงนิดหน่อยให้เหลือพื้นที่
+                        center: ['50%', item.showLegend ? '40%' : '50%'], // 🟢 ดันวงกลมขึ้นไปด้านบนที่ 40% ถ้าเปิด Legend
                         avoidLabelOverlap: true,
                         itemStyle: { borderRadius: 5, borderColor: item.cBg, borderWidth: 2 },
                         label: {
                             show: true,
                             formatter: function (params) {
                                 let pct = item.total > 0 ? ((params.value / item.total) * 100).toFixed(1) : 0;
-                                // 🟢 If Legend is ON, hide names on lines. If OFF, show names.
+                                // 🟢 ตรรกะซ่อนชื่อบนเส้นชี้ถ้าเปิด Legend ด้านล่างไว้แล้ว
                                 if (item.showLegend) {
                                     return `{val|${params.value} คน}\n{pct|${pct}%}`;
                                 } else {
@@ -1159,8 +1148,8 @@
                 option = {
                     color: [chartColorPalette[0]],
                     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, textStyle: { fontFamily: 'Google Sans, Noto Sans Thai' } },
-                    // 🟢 More right padding for labels, containLabel ensures Y-axis text isn't cut off
-                    grid: { left: '3%', right: '12%', bottom: '3%', top: '5%', containLabel: true },
+                    // 🟢 เพิ่ม right margin ให้กว้างขึ้นเพื่อรองรับข้อความ % ท้ายกราฟ
+                    grid: { left: '3%', right: '15%', bottom: '3%', top: '5%', containLabel: true },
                     xAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed', color: item.cSub + '33' } }, axisLabel: { color: item.cSub, fontFamily: 'Google Sans, Noto Sans Thai' } },
                     yAxis: {
                         type: 'category',
@@ -1169,8 +1158,8 @@
                             color: item.cText,
                             fontWeight: 'bold',
                             fontFamily: 'Google Sans, Noto Sans Thai',
-                            width: 250, // 🟢 Set max width for categories
-                            overflow: 'break' // 🟢 "ห้ามตัดคำ" - Wrap text into new lines
+                            width: 250, // จำกัดความกว้างชื่อหมวดหมู่
+                            overflow: 'break' // 🟢 ปัดขึ้นบรรทัดใหม่ ห้ามใช้ ... ตัดคำ
                         },
                         axisLine: { show: false },
                         axisTick: { show: false }
@@ -1179,10 +1168,10 @@
                         type: 'bar',
                         data: values,
                         itemStyle: { borderRadius: [0, 4, 4, 0] },
-                        barMaxWidth: 40, // Prevent bars from becoming huge if there are only 1-2 items
+                        barMaxWidth: 40,
                         label: {
                             show: true,
-                            position: 'right', // 🟢 Label on right
+                            position: 'right', // ตัวอักษรวางด้านขวานอกแท่ง
                             formatter: function (params) {
                                 let pct = item.total > 0 ? ((params.value / item.total) * 100).toFixed(2) : 0;
                                 return `{val|${params.value} คน}  {pct|คิดเป็น ${pct}%}`;
@@ -1202,12 +1191,11 @@
                     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, textStyle: { fontFamily: 'Google Sans, Noto Sans Thai' } },
                     legend: {
                         show: item.showLegend,
-                        type: 'scroll', // 🟢 Scrollable legend
+                        type: 'scroll',
                         top: '0%', left: 'center', icon: 'circle',
                         textStyle: { color: item.cText, fontFamily: 'Google Sans, Noto Sans Thai', fontWeight: 'bold' },
                         pageIconColor: item.cAccent
                     },
-                    // 🟢 More top padding if legend is present
                     grid: { left: '3%', right: '4%', bottom: '5%', top: item.showLegend ? '20%' : '10%', containLabel: true },
                     xAxis: {
                         type: 'category',
@@ -1217,8 +1205,8 @@
                             fontWeight: 'bold',
                             fontFamily: 'Google Sans, Noto Sans Thai',
                             interval: 0,
-                            width: 80, // Limit width of X labels
-                            overflow: 'break' // 🟢 Wrap text if long
+                            width: 80, 
+                            overflow: 'break' // 🟢 ปัดขึ้นบรรทัดใหม่ถ้ายาวเกิน
                         },
                         axisLine: { show: false }, axisTick: { show: false }
                     },
@@ -1252,7 +1240,7 @@
     function renderLiveCanvasDashboardSpace() {
         const container = document.getElementById('liveCanvasGridContainer');
         container.innerHTML = "";
-        let chartDataQueue = []; // คิวสำหรับเก็บข้อมูลเพื่อนำไปวาดกราฟด้วย ECharts
+        let chartDataQueue = []; 
 
         const filterConfig = liveWidgetMapping.find(m => m.isFilter === true);
         let d1 = [...rawData1], d2 = [...rawData2];
@@ -1365,7 +1353,6 @@
                 let avg = count ? (sum/count).toFixed(2) : "0.00"; let pct = (parseFloat(avg)/5)*100;
                 innerHtml = `<div class="glass-card p-5 flex flex-col justify-between h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="flex justify-between items-start mb-3 gap-2"><span class="text-xs font-black flex-1 leading-snug" style="color: ${cSub};">${dispHeaderTitle}</span><span class="text-lg font-black px-2.5 py-0.5 rounded-xl border shadow-sm" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${avg}</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: ${cText}1A;"><div class="h-full" style="width:${pct}%; background-color: ${cAccent};"></div></div></div>${noteHtml}</div>`;
             }
-            // 🟢 ส่วนของการสร้างกราฟ ECharts (วงกลม, แท่งแนวนอน, แท่งแนวตั้ง)
             else if (m.type === 'chart_pie' || m.type === 'chart_bar_h' || m.type === 'chart_bar_v') {
                 let counts = {}; let validTotal = 0;
                 data.forEach(r => { let val = String(r[m.index] || "").trim(); if(val && val !== "-") { validTotal++; counts[val] = (counts[val]||0)+1; } });
@@ -1389,13 +1376,11 @@
                 
                 chartDataQueue.push({ id: `echart_${m.id}`, type: m.type, data: sorted, total: denominator, cBg, cText, cSub, cAccent, showLegend: m.showLegend !== false });
             }
-            // แบบตารางแจกแจงดั้งเดิม
             else if (m.type === 'single_choice' || m.type === 'multi_choice') {
                 let counts = {}; let validTotal = 0;
                 data.forEach(r => { let val = String(r[m.index] || "").trim(); if(val && val !== "-") { validTotal++; if (m.type === 'multi_choice') val.split(/,\s*/).forEach(x => { if(x) counts[x] = (counts[x]||0)+1; }); else counts[val] = (counts[val]||0)+1; } });
                 
                 let denominator = totalBaseForPct > 0 ? totalBaseForPct : validTotal;
-                
                 let sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
                 let tbody = sorted.map(it => { let p = denominator > 0 ? ((it[1]*100)/denominator).toFixed(2) : "0.00"; return `<tr class="hover:bg-black/5 transition" style="border-bottom: 1px solid ${cSub}33;"><td class="p-3 font-medium text-xs leading-tight" style="color: ${cText};">${it[0]}</td><td class="p-3 text-right font-black text-xs w-20" style="color: ${cText};">${it[1].toLocaleString()}</td><td class="p-3 text-right font-black text-xs w-20" style="color: ${cAccent}; background-color: ${cAccent}1A;">${p}%</td></tr>`; }).join('');
                 innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><h3 class="font-black text-sm mb-4 flex items-center gap-2"><span style="color: ${cAccent};" class="w-5 h-5 flex">${svgs.pieAlt}</span> <span class="leading-tight flex-1" style="color: ${cText};">${dispHeaderTitle}</span></h3><div class="overflow-x-auto rounded-xl shadow-inner flex-1" style="border: 1px solid ${cSub}33;"><table class="w-full text-xs text-left border-collapse"><thead class="font-bold text-[10px]" style="color: ${cSub}; border-bottom: 1px solid ${cSub}33; background-color: ${cSub}1A;"><tr><th class="p-2.5">รายการ</th><th class="p-2.5 text-right">จำนวน</th><th class="p-2.5 text-right">ร้อยละ</th></tr></thead><tbody style="background-color: transparent;">${tbody || `<tr><td colspan="3" class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีข้อมูล</td></tr>`}</tbody></table></div>${noteHtml}</div>`;
