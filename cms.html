@@ -531,8 +531,15 @@
             renderLiveCanvasDashboardSpace();
         }
     }
+
+    window.updateWidgetMultiToggle = function(id, isChecked) {
+        let match = liveWidgetMapping.find(m => m.id === id);
+        if(match) {
+            match.isMulti = isChecked;
+            renderLiveCanvasDashboardSpace();
+        }
+    }
     
-    // 🟢 โค้ดอัปเดตการตั้งค่าพายชาร์ตในแมปปิง
     window.updatePieConfig = function(id, key, val) {
         let match = liveWidgetMapping.find(m => m.id === id);
         if(match) {
@@ -924,18 +931,22 @@
 
             if (['chart_pie', 'chart_bar_h', 'chart_bar_v'].includes(map.type)) {
                 let isLegendOn = map.showLegend !== false; 
+                let isMultiOn = map.isMulti === true;
                 extraOptionsHtml += `
-                    <div class="mt-1.5 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                    <div class="mt-1.5 p-2 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
                         <label class="text-[10px] font-bold text-slate-600 flex items-center gap-1.5 cursor-pointer">
                             <input type="checkbox" onchange="updateWidgetLegendToggle('${map.id}', this.checked)" class="accent-indigo-600 rounded w-3 h-3" ${isLegendOn ? 'checked' : ''}> 
                             แสดงแถบสัญลักษณ์ (Legend) ด้านล่าง
+                        </label>
+                        <label class="text-[10px] font-bold text-slate-600 flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" onchange="updateWidgetMultiToggle('${map.id}', this.checked)" class="accent-indigo-600 rounded w-3 h-3" ${isMultiOn ? 'checked' : ''}> 
+                            เลือกได้หลายคำตอบ (คั่นด้วยลูกน้ำ)
                         </label>
                         ${map.type === 'chart_pie' ? `<div class="text-[9px] text-slate-400 mt-1 pl-4">* หากเปิด Legend ชื่อบนเส้นชี้จะถูกซ่อนเพื่อลดความซ้ำซ้อน</div>` : ''}
                     </div>
                 `;
             }
 
-            // 🟢 เพิ่มหน้าจอควบคุมขั้นสูง สำหรับพายชาร์ต (โชว์/ซ่อนสไตล์, เลื่อนหน้า)
             if (map.type === 'chart_pie') {
                 extraOptionsHtml += `
                     <div class="mt-1.5 p-2 bg-fuchsia-50 rounded-lg border border-fuchsia-100 space-y-2">
@@ -1096,7 +1107,7 @@
             let clonedCustomData = match.customData ? {...match.customData} : null;
             let clonedCompareLabels = match.compareLabels ? {...match.compareLabels} : null;
 
-            liveWidgetMapping.splice(idx + 1, 0, { ...match, id: 'w_cl_' + Math.random().toString(36).substr(2,4), type: match.type === 'custom_box' ? 'custom_box' : 'ignore', layout: clonedLayout, baseCalc: match.baseCalc || 'auto', isFilter: false, badgeRules: null, isOriginal: false, style: null, customData: clonedCustomData, compareLabels: clonedCompareLabels });
+            liveWidgetMapping.splice(idx + 1, 0, { ...match, id: 'w_cl_' + Math.random().toString(36).substr(2,4), type: match.type === 'custom_box' ? 'custom_box' : 'ignore', layout: clonedLayout, baseCalc: match.baseCalc || 'auto', isFilter: false, badgeRules: null, isOriginal: false, style: null, customData: clonedCustomData, compareLabels: clonedCompareLabels, isMulti: match.isMulti });
         }
         renderSidebarControlElements(); renderLiveCanvasDashboardSpace();
     }
@@ -1199,13 +1210,11 @@
         });
     };
 
-    // --- 🟢 ฟังก์ชันสำหรับการเรนเดอร์กราฟ ECharts ---
     function initEChartsWidgets(chartQueue) {
         chartQueue.forEach(item => {
             let dom = document.getElementById(item.id);
             if (!dom) return;
 
-            // 1. ปรับสมการความสูง (Dynamic Height Adjustment)
             if (item.type === 'chart_bar_h') {
                 let neededHeight = item.data.length * 40 + 100;
                 if (neededHeight > 350) dom.style.height = neededHeight + 'px';
@@ -1218,14 +1227,12 @@
                 let lType = item.legendType || 'scroll';
                 
                 let legendRows = Math.ceil(item.data.length / 2); 
-                let domHeight = 350; // ความสูงเริ่มต้น
+                let domHeight = 350; 
                 
                 if (item.showLegend) {
                     if (lType === 'plain') {
-                        // โหมดแสดงทั้งหมด: ยืดความสูงอัตโนมัติตามแถว
                         domHeight = 250 + (legendRows * 25);
                     } else {
-                        // โหมดเลื่อนหน้า: ล็อกความสูงเพื่อรองรับ 6 แถว (ประมาณ 150px)
                         domHeight = 250 + (Math.min(legendRows, 6) * 25);
                     }
                 }
@@ -1244,7 +1251,6 @@
             if (item.type === 'chart_pie') {
                 let pieData = item.data.map(d => ({ name: d[0], value: d[1] }));
                 
-                // อ่านค่าจาก Config หรือตั้งค่า Default
                 let pType = item.pieType || 'donut';
                 let pRad = item.pieRadius ? parseInt(item.pieRadius) : 45;
                 let pGap = item.pieGap ? parseInt(item.pieGap) : 40;
@@ -1262,12 +1268,12 @@
                     },
                     legend: {
                         show: item.showLegend,
-                        type: lType, // 'scroll' หรือ 'plain'
+                        type: lType,
                         orient: 'horizontal',
                         bottom: '0%',   
                         left: 'center',
                         icon: 'circle',
-                        height: lType === 'scroll' ? 140 : null, // ถ้าเป็นโหมดเลื่อนหน้าจะล็อกความสูง
+                        height: lType === 'scroll' ? 140 : null,
                         textStyle: {
                             color: item.cText,
                             fontFamily: 'Google Sans, Noto Sans Thai',
@@ -1518,7 +1524,20 @@
             }
             else if (m.type === 'chart_pie' || m.type === 'chart_bar_h' || m.type === 'chart_bar_v') {
                 let counts = {}; let validTotal = 0;
-                data.forEach(r => { let val = String(r[m.index] || "").trim(); if(val && val !== "-") { validTotal++; counts[val] = (counts[val]||0)+1; } });
+                data.forEach(r => { 
+                    let val = String(r[m.index] || "").trim(); 
+                    if(val && val !== "-") { 
+                        validTotal++; 
+                        if(m.isMulti) {
+                            val.split(/,\s*/).forEach(x => {
+                                let trimmed = x.trim();
+                                if(trimmed) counts[trimmed] = (counts[trimmed]||0)+1;
+                            });
+                        } else {
+                            counts[val] = (counts[val]||0)+1; 
+                        }
+                    } 
+                });
                 
                 let denominator = totalBaseForPct > 0 ? totalBaseForPct : validTotal;
                 let limit = rankingLimits[m.index] || 'ALL';
@@ -1572,14 +1591,14 @@
             }
             else if (m.type === 'text_list') {
                 let txts = [...new Set(data.map(r => String(r[m.index]).trim()))].filter(v => v && v!=="-" && v.length > 2);
-                let listHtml = txts.map((t, i) => `<div class="p-3 flex items-start gap-2.5 hover:bg-black/5 break-inside-avoid" style="background-color: transparent; border-bottom: 1px solid ${cSub}1A;"><div class="w-5 h-5 rounded-full flex items-center justify-center font-black flex-shrink-0 text-[9px] mt-0.5 border" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${i+1}</div><div class="text-xs leading-relaxed pt-0.5 whitespace-normal" style="color: ${cText};">${t}</div></div>`).join('');
-                innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><h3 class="font-black text-sm mb-4 flex items-center gap-1.5" style="color: ${cText};"><span style="color: ${cSub};" class="w-5 h-5 flex">${svgs.comment}</span> <span class="leading-tight">${dispHeaderTitle}</span></h3><div class="rounded-xl max-h-[250px] overflow-y-auto print:max-h-none shadow-inner flex-1" style="background-color: ${cText}0D; border: 1px solid ${cSub}1A;">${listHtml || `<div class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีความคิดเห็น</div>`}</div>${noteHtml}</div>`;
+                let listHtml = txts.map((t, i) => `<div class="p-3 flex items-start gap-2.5 break-inside-avoid" style="background-color: transparent; border-bottom: 1px solid ${cSub}1A;"><div class="w-5 h-5 rounded-full flex items-center justify-center font-black flex-shrink-0 text-[9px] mt-0.5 border" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${i+1}</div><div class="text-xs leading-relaxed pt-0.5 whitespace-normal" style="color: ${cText};">${t}</div></div>`).join('');
+                innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><h3 class="font-black text-sm mb-4 flex items-center gap-1.5" style="color: ${cText};"><span style="color: ${cSub};" class="w-5 h-5 flex">${svgs.comment}</span> <span class="whitespace-normal leading-tight">${dispHeaderTitle}</span></h3><div class="rounded-xl max-h-[250px] overflow-y-auto print:max-h-none shadow-inner flex-1" style="background-color: ${cText}0D; border: 1px solid ${cSub}1A;">${listHtml || `<div class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีความคิดเห็น</div>`}</div>${noteHtml}</div>`;
             }
 
             if(innerHtml) container.innerHTML += `<div class="live-widget-box ${colSpanClass}" data-widget-id="${m.id}">${innerHtml}</div>`;
-       });
+        });
 
-       if (tableMaps.length > 0) {
+        if (tableMaps.length > 0) {
            let hasComparison = (rawData1.length > 0 && rawData2.length > 0);
            let keyIndex1 = tableMaps[0].index;
            let keyIndex2 = fetchedHeaders2.length > 0 ? 0 : 0;
@@ -2094,10 +2113,22 @@
                 let avg = count ? (sum/count).toFixed(2) : "0.00"; let pct = (parseFloat(avg)/5)*100;
                 innerHtml = `<div class="glass-card p-6 flex flex-col justify-between h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="flex justify-between items-start mb-3 gap-2"><span class="text-xs font-black flex-1 whitespace-normal leading-snug" style="color: ${cSub};">${dispHeaderTitle}</span><span class="text-lg font-black px-2.5 py-0.5 rounded-xl border shadow-sm" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${avg}</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: ${cText}1A;"><div class="h-full" style="width:${pct}%; background-color: ${cAccent};"></div></div></div></div>`;
             }
-            // 🟢 ECharts สำหรับหน้า Share View Only
             else if (m.type === 'chart_pie' || m.type === 'chart_bar_h' || m.type === 'chart_bar_v') {
                 let counts = {}; let validTotal = 0;
-                data.forEach(r => { let val = String(r[m.index] || "").trim(); if(val && val !== "-") { validTotal++; counts[val] = (counts[val]||0)+1; } });
+                data.forEach(r => { 
+                    let val = String(r[m.index] || "").trim(); 
+                    if(val && val !== "-") { 
+                        validTotal++; 
+                        if(m.isMulti) {
+                            val.split(/,\s*/).forEach(x => {
+                                let trimmed = x.trim();
+                                if(trimmed) counts[trimmed] = (counts[trimmed]||0)+1;
+                            });
+                        } else {
+                            counts[val] = (counts[val]||0)+1; 
+                        }
+                    } 
+                });
                 
                 let denominator = totalBaseForPct > 0 ? totalBaseForPct : validTotal;
                 let limit = rankingLimits[m.index] || 'ALL';
