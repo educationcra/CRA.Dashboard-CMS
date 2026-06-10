@@ -68,7 +68,7 @@
     .preview-tablet { width: 100%; max-width: 820px; background-color: #ffffff; border-radius: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); margin-top: 2rem; margin-bottom: 2rem; border: 8px solid #cbd5e1; }
     .preview-mobile { width: 100%; max-width: 414px; background-color: #ffffff; border-radius: 3rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); margin-top: 2rem; margin-bottom: 2rem; border: 12px solid #1e293b; }
 
-    .echart-container { width: 100%; transition: height 0.3s ease; }
+    .echart-container { width: 100%; transition: min-height 0.3s ease; }
 
     @media print {
       .no-print { display: none !important; }
@@ -641,7 +641,7 @@
             const json = await apiCall({ action: 'loadProject', projectId: id });
             editingProjectId = id; 
             const cfg = json.config;
-            currentAppConfig = cfg; // 🟢 ทำการซิงค์ออบเจ็กต์ Config หลักด้วย ป้องกันสเตทข้อมูลห้องทำงาน CMS ตกหล่น!
+            currentAppConfig = cfg; 
 
             document.getElementById('dashTitleInput').value = json.projectName;
             document.getElementById('dashLogoInput').value = json.logoUrl || '';
@@ -713,7 +713,7 @@
              switchSidebarTab(currentSidebarTab);
              
              buildGlobalFilterUI(liveWidgetMapping);
-             renderLiveCanvasDashboardSpace(); // 🟢 เพิ่มการอัปเดต Canvas ตรงนี้ เพื่อให้แสดงผลทันทีหลังดึงข้อมูล!
+             renderLiveCanvasDashboardSpace(); 
           } else {
               Swal.fire('ข้อผิดพลาดชีท', json.message, 'error');
           }
@@ -875,14 +875,15 @@
             let showLegend = m.showLegend !== false;
             let legendType = m.legendType || 'scroll';
             let legendRows = Math.ceil(dataLength / 2);
+            let baseHeight = 350; // ปรับให้สูงขึ้น
             if (showLegend) {
                 if (legendType === 'plain') {
-                    return 280 + (legendRows * 25) + 40;
+                    return baseHeight + (legendRows * 25) + 40;
                 } else {
-                    return 280 + (Math.min(legendRows, 6) * 25) + 40;
+                    return baseHeight + (Math.min(legendRows, 6) * 25) + 40;
                 }
             }
-            return 350;
+            return baseHeight;
         } else {
             return 350; // ค่ามาตรฐานของแท่งแนวตั้ง (V-Bar)
         }
@@ -1274,8 +1275,30 @@
             let dom = document.getElementById(item.id);
             if (!dom) return;
 
-            // 🟢 ล็อกสัดส่วนความสูงของ Canvas ให้แสดงผลเต็มขนาดตามค่าที่คำนวณไว้ล่วงหน้าทันที ป้องกันบั๊กกราฟวงกลมแบนราบ!
-            dom.style.height = item.height + 'px';
+            // 1. ปรับสมการความสูง (Dynamic Height Adjustment)
+            let domHeight = 350;
+            if (item.type === 'chart_bar_h') {
+                domHeight = Math.max(350, item.data.length * 40 + 100);
+            }
+            else if (item.type === 'chart_pie') {
+                let pType = item.pieType || 'donut';
+                let pRad = item.pieRadius ? parseInt(item.pieRadius) : 45;
+                let pGap = item.pieGap ? parseInt(item.pieGap) : 40;
+                let lType = item.legendType || 'scroll';
+                
+                let legendRows = Math.ceil(item.data.length / 2); 
+                
+                if (item.showLegend) {
+                    if (lType === 'plain') {
+                        domHeight = 350 + (legendRows * 25);
+                    } else {
+                        domHeight = 350 + (Math.min(legendRows, 6) * 25);
+                    }
+                }
+            }
+
+            // 🟢 เปลี่ยนจาก height ธรรมดาเป็น minHeight ป้องกันกราฟแฟบเมื่ออยู่คู่กับการ์ดที่สั้นกว่า
+            dom.style.minHeight = domHeight + 'px';
 
             let existingChart = echarts.getInstanceByDom(dom);
             if (existingChart) { existingChart.dispose(); }
@@ -1555,7 +1578,6 @@
                     ${noteHtml}
                 </div>`;
             }
-            // 🟢 ส่วนประมวลผลกราฟสถิติเฉลี่ยคะแนนประเมิน (ระดับ 1-5 และเปลี่ยนกลุ่มระดับประโยคคำพูดให้เป็นค่าคะแนน)
             else if (m.type === 'average') {
                 let sum = 0, count = 0; 
                 data.forEach(r => { 
@@ -1568,7 +1590,7 @@
                 });
                 let avg = count ? (sum/count).toFixed(2) : "0.00"; 
                 let pct = (parseFloat(avg)/5)*100;
-                innerHtml = `<div class="glass-card p-5 flex flex-col justify-between h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="flex justify-between items-start mb-3 gap-2"><span class="text-xs font-black flex-1 leading-snug" style="color: ${cText};">${dispHeaderTitle}</span><span class="text-lg font-black px-2.5 py-0.5 rounded-xl border shadow-sm" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${avg}</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: ${cText}1A;"><div class="h-full" style="width:${pct}%; background-color: ${cAccent};"></div></div></div>${noteHtml}</div>`;
+                innerHtml = `<div class="glass-card p-5 flex flex-col justify-between h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="flex justify-between items-start mb-3 gap-2"><span class="text-xs font-black flex-1 whitespace-normal leading-snug" style="color: ${cText};">${dispHeaderTitle}</span><span class="text-lg font-black px-2.5 py-0.5 rounded-xl border shadow-sm" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${avg}</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: ${cText}1A;"><div class="h-full" style="width:${pct}%; background-color: ${cAccent};"></div></div></div>${noteHtml}</div>`;
             }
             else if (m.type === 'chart_pie' || m.type === 'chart_bar_h' || m.type === 'chart_bar_v') {
                 let counts = {}; let validTotal = 0;
@@ -1591,7 +1613,6 @@
                 let limit = rankingLimits[m.index] || 'ALL';
                 let sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]); if(limit !== 'ALL') sorted = sorted.slice(0, parseInt(limit));
 
-                // 🟢 ดึงสมการคำนวณสัดส่วนความสูงของตัวกราฟมาประยุกต์ใช้ในการกางแท่ง Canvas ล่วงหน้า
                 let chartHeight = calculateChartHeight(m, sorted.length);
 
                 innerHtml = `
@@ -1603,7 +1624,7 @@
                         </h3>
                         ${(m.type === 'chart_bar_h' || m.type === 'chart_bar_v') ? `<select onchange="updateRankingLimit(${m.index}, this.value)" class="text-[10px] font-bold bg-white/50 rounded-lg px-2 py-1 outline-none" style="color: ${cSub}; border: 1px solid ${cSub}33;"><option value="ALL" ${limit==='ALL'?'selected':''}>ทั้งหมด</option><option value="10" ${limit==='10'?'selected':''}>Top 10</option></select>` : ''}
                     </div>
-                    <div id="echart_${m.id}" class="echart-container flex-1 mt-2" style="height: ${chartHeight}px;"></div>
+                    <div id="echart_${m.id}" class="echart-container w-full mt-2 shrink-0" style="min-height: ${chartHeight}px;"></div>
                     ${noteHtml}
                 </div>`;
                 
@@ -1635,20 +1656,20 @@
                     else if (idx === 1) rankIcon = svgs.rank2;
                     else if (idx === 2) rankIcon = svgs.rank3;
                     else rankIcon = `<span class="font-black" style="color:${cAccent};">${idx+1}</span>`;
-                    return `<div class="flex items-center justify-between p-2.5 hover:bg-black/5 transition gap-2" style="border-bottom: 1px solid ${cSub}1A;"><div class="w-6 flex justify-center text-sm">${rankIcon}</div><div class="flex-1 min-w-0 font-bold text-xs leading-snug" style="color: ${cText};">${it[0]}</div><div class="text-right flex-shrink-0"><div class="font-black text-xs" style="color: ${cText};">${it[1].toLocaleString()}</div><div class="text-[9px] font-bold" style="color: ${cSub};">${p}%</div></div></div>`; 
+                    return `<div class="flex items-center justify-between p-2.5 hover:bg-black/5 transition gap-2" style="border-bottom: 1px solid ${cSub}1A;"><div class="w-6 flex justify-center text-sm">${rankIcon}</div><div class="flex-1 min-w-0 font-bold text-xs leading-snug whitespace-normal" style="color: ${cText};">${it[0]}</div><div class="text-right flex-shrink-0"><div class="font-black text-xs" style="color: ${cText};">${it[1].toLocaleString()}</div><div class="text-[9px] font-bold" style="color: ${cSub};">${p}%</div></div></div>`; 
                 }).join('');
-                innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div class="flex items-start justify-between mb-4 gap-2"><h3 class="font-black text-sm flex items-center gap-1.5" style="color: ${cText};"><span style="color: ${cAccent};" class="w-5 h-5 flex">${svgs.histogram}</span> <span class="leading-tight">${dispHeaderTitle}</span></h3><select onchange="updateRankingLimit(${m.index}, this.value)" class="text-[10px] font-bold bg-white/50 rounded-lg px-2 py-1 outline-none" style="color: ${cSub}; border: 1px solid ${cSub}33;"><option value="ALL" ${limit==='ALL'?'selected':''}>ทั้งหมด</option><option value="10" ${limit==='10'?'selected':''}>Top 10</option></select></div><div class="rounded-xl p-1.5 flex-1 overflow-y-auto max-h-[300px] shadow-inner print:max-h-none" style="background-color: ${cText}0D; border: 1px solid ${cSub}1A;">${tbody || `<div class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีข้อมูล</div>`}</div>${noteHtml}</div>`;
+                innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div class="flex items-start justify-between mb-4 gap-2"><h3 class="font-black text-sm flex items-center gap-1.5" style="color: ${cText};"><span style="color: ${cAccent};" class="w-5 h-5 flex">${svgs.histogram}</span> <span class="whitespace-normal leading-tight">${dispHeaderTitle}</span></h3><select onchange="updateRankingLimit(${m.index}, this.value)" class="text-[10px] font-bold bg-white/50 rounded-lg px-2 py-1 outline-none" style="color: ${cSub}; border: 1px solid ${cSub}33;"><option value="ALL" ${limit==='ALL'?'selected':''}>ทั้งหมด</option><option value="10" ${limit==='10'?'selected':''}>Top 10</option></select></div><div class="rounded-xl p-1.5 flex-1 overflow-y-auto max-h-[300px] shadow-inner print:max-h-none" style="background-color: ${cText}0D; border: 1px solid ${cSub}1A;">${tbody || `<div class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีข้อมูล</div>`}</div>${noteHtml}</div>`;
             }
             else if (m.type === 'text_list') {
                 let txts = [...new Set(data.map(r => String(r[m.index]).trim()))].filter(v => v && v!=="-" && v.length > 2);
                 let listHtml = txts.map((t, i) => `<div class="p-3 flex items-start gap-2.5 hover:bg-black/5 break-inside-avoid" style="background-color: transparent; border-bottom: 1px solid ${cSub}1A;"><div class="w-5 h-5 rounded-full flex items-center justify-center font-black flex-shrink-0 text-[9px] mt-0.5 border" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${i+1}</div><div class="text-xs leading-relaxed pt-0.5 whitespace-normal" style="color: ${cText};">${t}</div></div>`).join('');
-                innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><h3 class="font-black text-sm mb-4 flex items-center gap-1.5" style="color: ${cText};"><span style="color: ${cSub};" class="w-5 h-5 flex">${svgs.comment}</span> <span class="leading-tight">${dispHeaderTitle}</span></h3><div class="rounded-xl max-h-[250px] overflow-y-auto print:max-h-none shadow-inner flex-1" style="background-color: ${cText}0D; border: 1px solid ${cSub}1A;">${listHtml || `<div class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีความคิดเห็น</div>`}</div>${noteHtml}</div>`;
+                innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><h3 class="font-black text-sm mb-4 flex items-center gap-1.5" style="color: ${cText};"><span style="color: ${cSub};" class="w-5 h-5 flex">${svgs.comment}</span> <span class="whitespace-normal leading-tight">${dispHeaderTitle}</span></h3><div class="rounded-xl max-h-[250px] overflow-y-auto print:max-h-none shadow-inner flex-1" style="background-color: ${cText}0D; border: 1px solid ${cSub}1A;">${listHtml || `<div class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีความคิดเห็น</div>`}</div>${noteHtml}</div>`;
             }
 
             if(innerHtml) container.innerHTML += `<div class="live-widget-box ${colSpanClass}" data-widget-id="${m.id}">${innerHtml}</div>`;
-       });
+        });
 
-       if (tableMaps.length > 0) {
+        if (tableMaps.length > 0) {
            let hasComparison = (rawData1.length > 0 && rawData2.length > 0);
            let keyIndex1 = tableMaps[0].index;
            let keyIndex2 = fetchedHeaders2.length > 0 ? 0 : 0;
@@ -1700,7 +1721,7 @@
                    let badge = isFound 
                        ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 w-fit mx-auto"><span class="w-3.5 h-3.5 flex">${svgs.check}</span> เข้าร่วม</span>`
                        : `<span class="bg-rose-50 text-rose-700 border border-rose-100 px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 w-fit mx-auto"><span class="w-3.5 h-3.5 flex">${svgs.crossCircle}</span> ไม่มางาน</span>`;
-                   tds += `<td class="p-3 text-center">${badge}</td>`;
+                   tds += `<td class="p-3.5 text-center">${badge}</td>`;
                }
                return `<tr class="canvas-tablerow border-b border-slate-100 text-xs" data-row-status="${currentStatus}">${tds}</tr>`;
            }).join('');
@@ -2205,7 +2226,7 @@
                             <span class="leading-tight">${dispHeaderTitle}</span>
                         </h3>
                     </div>
-                    <div id="echart_${m.id}_view" class="echart-container flex-1 mt-2" style="height: ${chartHeight}px;"></div>
+                    <div id="echart_${m.id}_view" class="echart-container w-full mt-2 shrink-0" style="min-height: ${chartHeight}px;"></div>
                 </div>`;
                 
                 chartDataQueue.push({ 
