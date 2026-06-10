@@ -710,6 +710,7 @@
              switchSidebarTab(currentSidebarTab);
              
              buildGlobalFilterUI(liveWidgetMapping);
+             renderLiveCanvasDashboardSpace(); // 🟢 เพิ่มการอัปเดต Canvas ตรงนี้ เพื่อให้แสดงผลทันทีหลังดึงข้อมูล!
           } else {
               Swal.fire('ข้อผิดพลาดชีท', json.message, 'error');
           }
@@ -1112,6 +1113,7 @@
         renderSidebarControlElements(); renderLiveCanvasDashboardSpace();
     }
 
+    // 🟢 2. ทำ Color Settings Modal ให้ฉลาดขึ้นและเปลี่ยนชื่อ Label ตามชนิดกราฟ
     function openWidgetColorConfig() {
         if(!activeWidgetContextEl) return;
         const wid = activeWidgetContextEl.getAttribute('data-widget-id');
@@ -1128,26 +1130,43 @@
         let curSub = (match.style && match.style.subTextColor) ? match.style.subTextColor : defSub;
         let curAccent = (match.style && match.style.accentColor) ? match.style.accentColor : defAccent;
 
+        let fieldsHtml = `
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">สีพื้นหลัง (Background)</label>
+                <input type="color" id="cfgBg" value="${curBg}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm">
+            </div>
+        `;
+
+        if (match.type === 'spacer') {
+            fieldsHtml += `
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">สีตัวอักษรข้อความ</label><input type="color" id="cfgText" value="${curText}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm"></div>
+                <div class="hidden"><input type="color" id="cfgSub" value="${curSub}"><input type="color" id="cfgAccent" value="${curAccent}"></div>
+            `;
+        } else if (match.type === 'average') {
+            fieldsHtml += `
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">สีตัวอักษรหัวข้อ</label><input type="color" id="cfgText" value="${curText}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm"></div>
+                <div class="hidden"><input type="color" id="cfgSub" value="${curSub}"></div>
+                <div><label class="block text-xs font-bold text-indigo-500 mb-1">สีคะแนนเฉลี่ย / หลอดคะแนน</label><input type="color" id="cfgAccent" value="${curAccent}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm"></div>
+            `;
+        } else if (match.type === 'kpi_compare') {
+            fieldsHtml += `
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">สีตัวเลขจำนวน</label><input type="color" id="cfgText" value="${curText}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm"></div>
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">สีหัวข้อและข้อความประกอบ</label><input type="color" id="cfgSub" value="${curSub}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm"></div>
+                <div class="hidden"><input type="color" id="cfgAccent" value="${curAccent}"></div>
+            `;
+        } else {
+            fieldsHtml += `
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">สีอักษรหลัก (Primary Text / Number)</label><input type="color" id="cfgText" value="${curText}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm"></div>
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">สีอักษรรอง (Subtext / Header)</label><input type="color" id="cfgSub" value="${curSub}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm"></div>
+                <div><label class="block text-xs font-bold text-indigo-500 mb-1">สีไฮไลต์ (Accent / Progress / Badge)</label><input type="color" id="cfgAccent" value="${curAccent}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm"></div>
+            `;
+        }
+
         Swal.fire({
-            title: `<div class="flex items-center gap-2 justify-center text-lg"><span class="text-indigo-500">${svgs.paintBrush}</span> ปรับแต่งสีการ์ดครบวงจร</div>`,
+            title: `<div class="flex items-center gap-2 justify-center text-lg"><span class="text-indigo-500">${svgs.paintBrush}</span> ปรับแต่งสีการ์ด</div>`,
             html: `
                 <div class="space-y-4 text-left mt-2">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">สีพื้นหลัง (Background)</label>
-                        <input type="color" id="cfgBg" value="${curBg}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">สีอักษรหลัก (Primary Text / Number)</label>
-                        <input type="color" id="cfgText" value="${curText}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">สีอักษรรอง (Subtext / Header)</label>
-                        <input type="color" id="cfgSub" value="${curSub}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-indigo-500 mb-1">สีไฮไลต์ (Accent / Progress / Badge)</label>
-                        <input type="color" id="cfgAccent" value="${curAccent}" class="w-full h-10 rounded-lg cursor-pointer border border-slate-200 shadow-sm">
-                    </div>
+                    ${fieldsHtml}
                     <button onclick="document.getElementById('cfgBg').value='${defBg}'; document.getElementById('cfgText').value='${defText}'; document.getElementById('cfgSub').value='${defSub}'; document.getElementById('cfgAccent').value='${defAccent}';" class="text-xs text-indigo-500 font-bold hover:underline mt-2 flex items-center gap-1"><span class="w-3.5 h-3.5">${svgs.refresh}</span> คืนค่าสีเริ่มต้น</button>
                 </div>
             `,
@@ -1520,7 +1539,8 @@
             else if (m.type === 'average') {
                 let sum = 0, count = 0; data.forEach(r => { let v = parseFloat(r[m.index]); if(!isNaN(v)){ sum += v; count++; } });
                 let avg = count ? (sum/count).toFixed(2) : "0.00"; let pct = (parseFloat(avg)/5)*100;
-                innerHtml = `<div class="glass-card p-5 flex flex-col justify-between h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="flex justify-between items-start mb-3 gap-2"><span class="text-xs font-black flex-1 leading-snug" style="color: ${cSub};">${dispHeaderTitle}</span><span class="text-lg font-black px-2.5 py-0.5 rounded-xl border shadow-sm" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${avg}</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: ${cText}1A;"><div class="h-full" style="width:${pct}%; background-color: ${cAccent};"></div></div></div>${noteHtml}</div>`;
+                // 🟢 กราฟคะแนนเฉลี่ย ใช้สี cText แทน cSub สำหรับ Title เพื่อให้ Color Config Modal ตรงกัน
+                innerHtml = `<div class="glass-card p-5 flex flex-col justify-between h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="flex justify-between items-start mb-3 gap-2"><span class="text-xs font-black flex-1 whitespace-normal leading-snug" style="color: ${cText};">${dispHeaderTitle}</span><span class="text-lg font-black px-2.5 py-0.5 rounded-xl border shadow-sm" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${avg}</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: ${cText}1A;"><div class="h-full" style="width:${pct}%; background-color: ${cAccent};"></div></div></div>${noteHtml}</div>`;
             }
             else if (m.type === 'chart_pie' || m.type === 'chart_bar_h' || m.type === 'chart_bar_v') {
                 let counts = {}; let validTotal = 0;
@@ -1592,7 +1612,7 @@
             else if (m.type === 'text_list') {
                 let txts = [...new Set(data.map(r => String(r[m.index]).trim()))].filter(v => v && v!=="-" && v.length > 2);
                 let listHtml = txts.map((t, i) => `<div class="p-3 flex items-start gap-2.5 break-inside-avoid" style="background-color: transparent; border-bottom: 1px solid ${cSub}1A;"><div class="w-5 h-5 rounded-full flex items-center justify-center font-black flex-shrink-0 text-[9px] mt-0.5 border" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${i+1}</div><div class="text-xs leading-relaxed pt-0.5 whitespace-normal" style="color: ${cText};">${t}</div></div>`).join('');
-                innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><h3 class="font-black text-sm mb-4 flex items-center gap-1.5" style="color: ${cText};"><span style="color: ${cSub};" class="w-5 h-5 flex">${svgs.comment}</span> <span class="whitespace-normal leading-tight">${dispHeaderTitle}</span></h3><div class="rounded-xl max-h-[250px] overflow-y-auto print:max-h-none shadow-inner flex-1" style="background-color: ${cText}0D; border: 1px solid ${cSub}1A;">${listHtml || `<div class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีความคิดเห็น</div>`}</div>${noteHtml}</div>`;
+                innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><h3 class="font-black text-sm mb-4 flex items-center gap-1.5" style="color: ${cText};"><span style="color: ${cSub};" class="w-5 h-5 flex">${svgs.comment}</span> <span class="leading-tight">${dispHeaderTitle}</span></h3><div class="rounded-xl max-h-[250px] overflow-y-auto print:max-h-none shadow-inner flex-1" style="background-color: ${cText}0D; border: 1px solid ${cSub}1A;">${listHtml || `<div class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีความคิดเห็น</div>`}</div>${noteHtml}</div>`;
             }
 
             if(innerHtml) container.innerHTML += `<div class="live-widget-box ${colSpanClass}" data-widget-id="${m.id}">${innerHtml}</div>`;
@@ -2111,8 +2131,10 @@
             else if (m.type === 'average') {
                 let sum = 0, count = 0; data.forEach(r => { let v = parseFloat(r[m.index]); if(!isNaN(v)){ sum += v; count++; } });
                 let avg = count ? (sum/count).toFixed(2) : "0.00"; let pct = (parseFloat(avg)/5)*100;
-                innerHtml = `<div class="glass-card p-6 flex flex-col justify-between h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="flex justify-between items-start mb-3 gap-2"><span class="text-xs font-black flex-1 whitespace-normal leading-snug" style="color: ${cSub};">${dispHeaderTitle}</span><span class="text-lg font-black px-2.5 py-0.5 rounded-xl border shadow-sm" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${avg}</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: ${cText}1A;"><div class="h-full" style="width:${pct}%; background-color: ${cAccent};"></div></div></div></div>`;
+                // 🟢 กราฟคะแนนเฉลี่ย ใช้สี cText แทน cSub สำหรับ Title
+                innerHtml = `<div class="glass-card p-6 flex flex-col justify-between h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><div><div class="flex justify-between items-start mb-3 gap-2"><span class="text-xs font-black flex-1 whitespace-normal leading-snug" style="color: ${cText};">${dispHeaderTitle}</span><span class="text-lg font-black px-2.5 py-0.5 rounded-xl border shadow-sm" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${avg}</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: ${cText}1A;"><div class="h-full" style="width:${pct}%; background-color: ${cAccent};"></div></div></div></div>`;
             }
+            // 🟢 ECharts สำหรับหน้า Share View Only
             else if (m.type === 'chart_pie' || m.type === 'chart_bar_h' || m.type === 'chart_bar_v') {
                 let counts = {}; let validTotal = 0;
                 data.forEach(r => { 
