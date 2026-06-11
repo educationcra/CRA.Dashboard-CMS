@@ -689,8 +689,10 @@
              
              const dbData = await apiCall({ action: 'getSheetData', ...currentAppConfig });
              if(dbData.status === 'success') { 
-                 rawData1 = dbData.data1.slice(1); 
-                 rawData2 = dbData.data2 ? dbData.data2.slice(1) : []; 
+                 // 🟢 กรองแถวว่าง (Empty Row) ทิ้งทันทีเมื่อดึงข้อมูลเสร็จ เพื่อแก้ปัญหา % ฐานประชากรเพี้ยน
+                 const hasData = row => row.some(cell => String(cell).trim() !== '');
+                 rawData1 = dbData.data1.slice(1).filter(hasData); 
+                 rawData2 = dbData.data2 ? dbData.data2.slice(1).filter(hasData) : []; 
              }
 
              if(savedMapping) {
@@ -726,8 +728,10 @@
         try {
             const dbData = await apiCall({ action: 'getSheetData', ...currentAppConfig });
             if(dbData.status === 'success') {
-                rawData1 = dbData.data1.slice(1);
-                if(dbData.data2 && dbData.data2.length > 0) rawData2 = dbData.data2.slice(1);
+                // 🟢 กรองแถวว่าง (Empty Row) ทิ้งทันทีเมื่อรีเฟรชข้อมูล
+                const hasData = row => row.some(cell => String(cell).trim() !== '');
+                rawData1 = dbData.data1.slice(1).filter(hasData);
+                if(dbData.data2 && dbData.data2.length > 0) rawData2 = dbData.data2.slice(1).filter(hasData);
                 renderLiveCanvasDashboardSpace();
                 Swal.fire({icon: 'success', title: 'อัปเดตข้อมูลสำเร็จ', timer: 1500, showConfirmButton: false});
             } else { Swal.fire('เกิดข้อผิดพลาด', 'ดึงข้อมูลไม่สำเร็จ', 'error'); }
@@ -850,14 +854,12 @@
         });
     };
 
-    // 🟢 ฟังก์ชันอัจฉริยะ แปลงสเกลตัวอักษรภาษาไทยเป็นตัวเลขคะแนน 1-5 โดยอัตโนมัติ สำหรับกราฟหาค่าเฉลี่ย
     function parseEvaluationValue(val) {
         if (val === undefined || val === null) return NaN;
         let cleanVal = String(val).trim();
         let num = parseFloat(cleanVal);
-        if (!isNaN(num)) return num; // ถ้าเป็นตัวเลขอยู่แล้วให้คืนค่าตัวเลขเลย
+        if (!isNaN(num)) return num; 
         
-        // 🟢 ตรวจสอบประโยคหรือกลุ่มคำหลักภาษาไทยที่มีในเซลล์ (รองรับการเขียนพ่วงท้าย เช่น พึงพอใจมากที่สุด)
         if (cleanVal.includes("มากที่สุด")) return 5;
         if (cleanVal.includes("น้อยที่สุด")) return 1;
         if (cleanVal.includes("มาก")) return 4;
@@ -867,7 +869,6 @@
         return NaN;
     }
 
-    // 🟢 ฟังก์ชันคำนวณและระบุความสูงของการ์ดกราฟ (Height Pre-calculation) ป้องกันกล่องกราฟแฟบตัวเหลือ 0px
     function calculateChartHeight(m, dataLength) {
         if (m.type === 'chart_bar_h') {
             return Math.max(350, dataLength * 40 + 100);
@@ -875,7 +876,7 @@
             let showLegend = m.showLegend !== false;
             let legendType = m.legendType || 'scroll';
             let legendRows = Math.ceil(dataLength / 2);
-            let baseHeight = 350; // ปรับให้สูงขึ้น
+            let baseHeight = 350; 
             if (showLegend) {
                 if (legendType === 'plain') {
                     return baseHeight + (legendRows * 25) + 40;
@@ -885,7 +886,7 @@
             }
             return baseHeight;
         } else {
-            return 350; // ค่ามาตรฐานของแท่งแนวตั้ง (V-Bar)
+            return 350; 
         }
     }
 
@@ -1275,31 +1276,6 @@
             let dom = document.getElementById(item.id);
             if (!dom) return;
 
-            // 1. ปรับสมการความสูง (Dynamic Height Adjustment)
-            let domHeight = 350;
-            if (item.type === 'chart_bar_h') {
-                domHeight = Math.max(350, item.data.length * 40 + 100);
-            }
-            else if (item.type === 'chart_pie') {
-                let pType = item.pieType || 'donut';
-                let pRad = item.pieRadius ? parseInt(item.pieRadius) : 45;
-                let pGap = item.pieGap ? parseInt(item.pieGap) : 40;
-                let lType = item.legendType || 'scroll';
-                
-                let legendRows = Math.ceil(item.data.length / 2); 
-                
-                if (item.showLegend) {
-                    if (lType === 'plain') {
-                        domHeight = 350 + (legendRows * 25);
-                    } else {
-                        domHeight = 350 + (Math.min(legendRows, 6) * 25);
-                    }
-                }
-            }
-
-            // 🟢 เปลี่ยนจาก height ธรรมดาเป็น minHeight ป้องกันกราฟแฟบเมื่ออยู่คู่กับการ์ดที่สั้นกว่า
-            dom.style.minHeight = domHeight + 'px';
-
             let existingChart = echarts.getInstanceByDom(dom);
             if (existingChart) { existingChart.dispose(); }
 
@@ -1462,7 +1438,7 @@
             myChart.setOption(option);
             window.addEventListener('resize', () => myChart.resize());
 
-            // 🟢 บังคับสั่งให้กราฟจัดสรรขนาดของกล่องทับอีกครั้ง หลังจากการเรนเดอร์ Element บน Canvas เพื่อป้องกันรูปเบี้ยวแฟบแบน
+            // บังคับสั่งให้กราฟรีไซส์ตัวเองเพื่อรับรองขนาด Canvas
             setTimeout(() => { myChart.resize(); }, 300);
         });
     }
@@ -1582,7 +1558,7 @@
                 let sum = 0, count = 0; 
                 data.forEach(r => { 
                     let rawVal = r[m.index];
-                    let v = parseEvaluationValue(rawVal); // 🟢 แปลงกลุ่มคำ มาก-น้อย ให้เป็นคะแนนตัวเลขโดยอัตโนมัติ
+                    let v = parseEvaluationValue(rawVal);
                     if(!isNaN(v)){ 
                         sum += v; 
                         count++; 
@@ -1615,9 +1591,10 @@
 
                 let chartHeight = calculateChartHeight(m, sorted.length);
 
+                // 🟢 ใช้ shrink-0 และ min-height ป้องกัน flex ยุบกล่อง
                 innerHtml = `
                 <div class="glass-card p-5 flex flex-col h-full w-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};">
-                    <div class="flex items-start justify-between mb-2 gap-2 z-10">
+                    <div class="flex items-start justify-between mb-2 gap-2 z-10 shrink-0">
                         <h3 class="font-black text-sm flex items-center gap-1.5" style="color: ${cText};">
                             <span style="color: ${cAccent};" class="w-5 h-5 flex">${m.type === 'chart_pie' ? svgs.chartPie : (m.type === 'chart_bar_h' ? svgs.chartBarH : svgs.chartBarV)}</span> 
                             <span class="leading-tight">${dispHeaderTitle}</span>
@@ -1662,7 +1639,7 @@
             }
             else if (m.type === 'text_list') {
                 let txts = [...new Set(data.map(r => String(r[m.index]).trim()))].filter(v => v && v!=="-" && v.length > 2);
-                let listHtml = txts.map((t, i) => `<div class="p-3 flex items-start gap-2.5 hover:bg-black/5 break-inside-avoid" style="background-color: transparent; border-bottom: 1px solid ${cSub}1A;"><div class="w-5 h-5 rounded-full flex items-center justify-center font-black flex-shrink-0 text-[9px] mt-0.5 border" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${i+1}</div><div class="text-xs leading-relaxed pt-0.5 whitespace-normal" style="color: ${cText};">${t}</div></div>`).join('');
+                let listHtml = txts.map((t, i) => `<div class="p-3 flex items-start gap-2.5 break-inside-avoid" style="background-color: transparent; border-bottom: 1px solid ${cSub}1A;"><div class="w-5 h-5 rounded-full flex items-center justify-center font-black flex-shrink-0 text-[9px] mt-0.5 border" style="color: ${cAccent}; background-color: ${cAccent}1A; border-color: ${cAccent}33;">${i+1}</div><div class="text-xs leading-relaxed pt-0.5 whitespace-normal" style="color: ${cText};">${t}</div></div>`).join('');
                 innerHtml = `<div class="glass-card p-5 flex flex-col h-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};"><h3 class="font-black text-sm mb-4 flex items-center gap-1.5" style="color: ${cText};"><span style="color: ${cSub};" class="w-5 h-5 flex">${svgs.comment}</span> <span class="whitespace-normal leading-tight">${dispHeaderTitle}</span></h3><div class="rounded-xl max-h-[250px] overflow-y-auto print:max-h-none shadow-inner flex-1" style="background-color: ${cText}0D; border: 1px solid ${cSub}1A;">${listHtml || `<div class="p-4 text-center font-bold" style="color: ${cSub};">ไม่มีความคิดเห็น</div>`}</div>${noteHtml}</div>`;
             }
 
@@ -2047,8 +2024,10 @@
             const dbData = await apiCall({ action: 'getSheetData', spreadsheetId: currentAppConfig.spreadsheetId, sheet1Name: currentAppConfig.sheet1Name, sheet2Name: currentAppConfig.sheet2Name });
             hideLoading();
 
-            rawData1 = dbData.data1.length > 0 ? dbData.data1.slice(1) : []; 
-            rawData2 = (dbData.data2 && dbData.data2.length > 0) ? dbData.data2.slice(1) : [];
+            // 🟢 กรองแถวว่าง (Empty Row) ทิ้งทันทีเมื่อโหลดข้อมูลหน้า Share View Only
+            const hasData = row => row.some(cell => String(cell).trim() !== '');
+            rawData1 = dbData.data1.length > 0 ? dbData.data1.slice(1).filter(hasData) : []; 
+            rawData2 = (dbData.data2 && dbData.data2.length > 0) ? dbData.data2.slice(1).filter(hasData) : [];
             
             buildGlobalFilterUI(currentAppConfig.mapping);
             renderWidgetsViewOnlyContainer(currentAppConfig.mapping);
@@ -2215,12 +2194,12 @@
                 let limit = rankingLimits[m.index] || 'ALL';
                 let sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]); if(limit !== 'ALL') sorted = sorted.slice(0, parseInt(limit));
 
-                // 🟢 ดึงความสูงแบบไดนามิกสำหรับการ์ดในหน้า View Only ด้วยเช่นกัน ป้องกันสัดส่วนแบนราบพังเหมือนตอนสร้าง
+                // 🟢 ดึงความสูงแบบไดนามิกสำหรับการ์ดในหน้า View Only ด้วยเช่นกัน
                 let chartHeight = calculateChartHeight(m, sorted.length);
 
                 innerHtml = `
                 <div class="glass-card p-6 flex flex-col h-full w-full" style="background-color: ${cBg}; border-color: ${cBg === '#ffffff' ? '#e2e8f0' : cBg};">
-                    <div class="flex items-start justify-between mb-2 gap-2 z-10">
+                    <div class="flex items-start justify-between mb-2 gap-2 z-10 shrink-0">
                         <h3 class="font-black text-sm flex items-center gap-1.5" style="color: ${cText};">
                             <span style="color: ${cAccent};" class="w-5 h-5 flex">${m.type === 'chart_pie' ? svgs.chartPie : (m.type === 'chart_bar_h' ? svgs.chartBarH : svgs.chartBarV)}</span> 
                             <span class="leading-tight">${dispHeaderTitle}</span>
